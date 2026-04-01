@@ -164,6 +164,7 @@ const state = {
   sortMode: 'attention',
   selectedId: null,
   selectedIds: [],
+  multiSelectMode: false,
   expandedTier: 'inner-circle',
   sidebarPanels: {
     views: true,
@@ -596,6 +597,13 @@ function render({ preserveFocus = true } = {}) {
                   <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
                 </select>
               </label>
+              <button
+                class="button button-secondary toolbar-mode-button ${state.multiSelectMode ? 'button-active' : ''}"
+                type="button"
+                data-action="toggle-multi-select"
+              >
+                ${state.multiSelectMode ? 'Done selecting' : 'Select multiple'}
+              </button>
             </div>
           </div>
 
@@ -655,9 +663,15 @@ function render({ preserveFocus = true } = {}) {
                           <button class="record-card ${isSelected ? 'selected' : ''}" data-select="${record.id}">
                             <div class="record-top">
                               <div class="record-person">
-                                <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
-                                  <span></span>
-                                </span>
+                                ${
+                                  state.multiSelectMode
+                                    ? `
+                                      <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                                        <span></span>
+                                      </span>
+                                    `
+                                    : ''
+                                }
                                 ${buildRecordAvatar(record, 'small')}
                                 <div>
                                   <p class="record-tier">${tierMeta[record.tier].label}</p>
@@ -2033,7 +2047,7 @@ function buildDataTab(duplicateGroups = []) {
       <div class="drop-zone" data-drop-zone="csv">
         Drop a CSV here to import contacts from Mesh, Clay, Google Contacts, or another CRM.
       </div>
-      <p class="empty-copy">Activity import accepts calendar `.ics` exports and CSV-style exports from tools like email, WhatsApp, or other communication logs so `Last contact` can update from real history.</p>
+      <p class="empty-copy">Activity import accepts calendar .ics exports and CSV-style exports from tools like email, WhatsApp, or other communication logs so Last contact can update from real history.</p>
     </section>
 
     ${
@@ -2304,6 +2318,13 @@ function handleClick(event) {
         state.settings.compact = !state.settings.compact
         persistSettings()
         animateCompactToggle()
+        render({ preserveFocus: false })
+        return
+      case 'toggle-multi-select':
+        state.multiSelectMode = !state.multiSelectMode
+        if (!state.multiSelectMode) {
+          state.selectedIds = []
+        }
         render({ preserveFocus: false })
         return
       case 'open-shortcuts-tab':
@@ -3141,7 +3162,7 @@ function addPerson() {
 }
 
 function toggleBulkSelection(id) {
-  if (!id) {
+  if (!id || !state.multiSelectMode) {
     return
   }
 
@@ -5603,21 +5624,21 @@ function positionSelectionRail({ animate = true } = {}) {
   const shell = app?.querySelector('[data-selection-shell]')
   const rail = shell?.querySelector('[data-selection-rail]')
   const selectedCard = shell?.querySelector('.record-card.selected')
+  const selectedRow = selectedCard?.closest('li')
 
-  if (!(shell instanceof HTMLElement) || !(rail instanceof HTMLElement) || !(selectedCard instanceof HTMLElement)) {
+  if (!(shell instanceof HTMLElement) || !(rail instanceof HTMLElement) || !(selectedCard instanceof HTMLElement) || !(selectedRow instanceof HTMLElement)) {
     if (rail instanceof HTMLElement) {
       rail.classList.remove('visible')
     }
     return
   }
 
-  const shellRect = shell.getBoundingClientRect()
-  const selectedRect = selectedCard.getBoundingClientRect()
-  const top = selectedRect.top - shellRect.top
+  const top = selectedRow.offsetTop
+  const height = selectedRow.offsetHeight
 
   rail.classList.toggle('no-animate', !animate)
   rail.style.transform = `translate3d(0, ${top}px, 0)`
-  rail.style.height = `${selectedRect.height}px`
+  rail.style.height = `${height}px`
   rail.classList.add('visible')
 
   if (!animate) {

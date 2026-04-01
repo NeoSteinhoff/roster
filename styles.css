@@ -945,11 +945,12 @@ p {
 
 .record-list-shell {
   position: relative;
+  padding-inline: 10px;
 }
 
 .selection-rail {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 10px auto 10px;
   border-radius: 26px;
   background:
     linear-gradient(90deg, rgba(245, 168, 104, 0.12), rgba(127, 208, 194, 0.08) 56%, transparent 82%);
@@ -975,10 +976,12 @@ p {
 .record-card {
   position: relative;
   z-index: 1;
+  display: block;
   width: 100%;
-  padding: 18px 0;
+  padding: 18px 14px;
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 26px;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -990,8 +993,9 @@ p {
 .record-card::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 -28px;
+  inset: 10px auto 10px -10px;
   width: 4px;
+  border-radius: 999px;
   background: transparent;
   transition: background-color 180ms ease;
 }
@@ -1922,6 +1926,12 @@ body.dense-ui .memory-composer {
   align-items: end;
 }
 
+.toolbar-mode-button {
+  min-height: 50px;
+  align-self: end;
+  white-space: nowrap;
+}
+
 .toolbar-select {
   display: grid;
   gap: 6px;
@@ -2394,18 +2404,30 @@ body.dense-ui .memory-composer {
 
 .record-list--animated > li {
   opacity: 0;
+  animation: list-item-fade 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.record-list--animated > li .record-card {
   transform: translateY(14px);
   animation: list-item-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.record-list--animated > li:nth-child(1) { animation-delay: 30ms; }
-.record-list--animated > li:nth-child(2) { animation-delay: 60ms; }
-.record-list--animated > li:nth-child(3) { animation-delay: 90ms; }
-.record-list--animated > li:nth-child(4) { animation-delay: 120ms; }
-.record-list--animated > li:nth-child(5) { animation-delay: 150ms; }
-.record-list--animated > li:nth-child(6) { animation-delay: 180ms; }
-.record-list--animated > li:nth-child(7) { animation-delay: 210ms; }
-.record-list--animated > li:nth-child(8) { animation-delay: 240ms; }
+.record-list--animated > li:nth-child(1),
+.record-list--animated > li:nth-child(1) .record-card { animation-delay: 30ms; }
+.record-list--animated > li:nth-child(2),
+.record-list--animated > li:nth-child(2) .record-card { animation-delay: 60ms; }
+.record-list--animated > li:nth-child(3),
+.record-list--animated > li:nth-child(3) .record-card { animation-delay: 90ms; }
+.record-list--animated > li:nth-child(4),
+.record-list--animated > li:nth-child(4) .record-card { animation-delay: 120ms; }
+.record-list--animated > li:nth-child(5),
+.record-list--animated > li:nth-child(5) .record-card { animation-delay: 150ms; }
+.record-list--animated > li:nth-child(6),
+.record-list--animated > li:nth-child(6) .record-card { animation-delay: 180ms; }
+.record-list--animated > li:nth-child(7),
+.record-list--animated > li:nth-child(7) .record-card { animation-delay: 210ms; }
+.record-list--animated > li:nth-child(8),
+.record-list--animated > li:nth-child(8) .record-card { animation-delay: 240ms; }
 
 .record-select-toggle {
   display: grid;
@@ -2562,12 +2584,19 @@ body.compact-pulse .summary-grid {
 
 @keyframes list-item-rise {
   from {
-    opacity: 0;
     transform: translateY(14px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes list-item-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
