@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.0
+- Added native local reminder controls with desktop notification digests, birthday lead-time, and this-week prep nudges.
+- Added smarter CSV import review with inferred field mapping before records are merged into the roster.
+- Added local activity import review for calendar and communication exports so last-contact can be updated from imported activity.
+- Added Meeting Brief mode for one-click “what do I need to remember before I see this person?” context.
+- Added mobile quick capture plus install-friendly manifest/service worker groundwork for faster phone and home-screen use.
+
 ## v0.8.0
 - Fixed the animated numbers so they settle cleanly in their resting state while keeping the roll effect.
 - Added collapsible left-rail sections for views, tiers, groups, tags, today, and the attention queue.

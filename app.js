@@ -1,7 +1,8 @@
 const RECORDS_KEY = 'friends-circle-crm.static.v4'
 const SETTINGS_KEY = 'friends-circle-crm.settings.v1'
 const DRAFTS_KEY = 'friends-circle-crm.drafts.v1'
-const APP_VERSION = '0.8.0'
+const REMINDER_LOG_KEY = 'friends-circle-crm.reminders.v1'
+const APP_VERSION = '0.9.0'
 const PROFILE_CLOSE_MS = 220
 
 const tierOrder = ['inner-circle', 'close', 'medium', 'acquaintance']
@@ -62,6 +63,8 @@ const hotkeyLegend = [
   { keys: 'M', action: 'Mark touched today' },
   { keys: 'A', action: 'Archive or restore person' },
   { keys: 'P', action: 'Open full profile' },
+  { keys: 'B', action: 'Open meeting brief' },
+  { keys: 'Q', action: 'Open quick capture' },
   { keys: 'E', action: 'Focus memory' },
   { keys: 'T', action: 'Focus tags' },
   { keys: 'F', action: 'Focus active context' },
@@ -124,6 +127,13 @@ const defaultSettings = {
   compact: false,
   scale: 67,
   customTouchStyles: [],
+  reminders: {
+    enabled: false,
+    range: 'week',
+    hour: 9,
+    birthdayLeadDays: 7,
+    meetingLeadDays: 1,
+  },
   defaults: { ...defaultContactSettings },
 }
 
@@ -174,15 +184,27 @@ const state = {
   profileOpen: false,
   profileClosing: false,
   profileEditOpen: false,
+  briefOpen: false,
+  quickCaptureOpen: false,
+  quickCaptureMode: 'memory',
+  quickCaptureRecordId: null,
+  csvImportReview: null,
+  activityImportReview: null,
   settings: loadSettings(),
   settingsTab: 'general',
   pendingImportMode: 'replace',
   pendingAvatarId: null,
+  reminderLog: loadReminderLog(),
   drafts: loadDrafts(),
   tagDraft: '',
   groupDraft: '',
   relatedDraft: '',
   touchStyleDraft: '',
+  quickCaptureDraft: {
+    tag: '',
+    memory: '',
+    note: '',
+  },
   memoryDraft: {
     date: todayStamp(),
     text: '',
@@ -190,11 +212,14 @@ const state = {
 }
 
 state.selectedId = state.records[0] ? state.records[0].id : null
+state.quickCaptureRecordId = state.selectedId
 restoreDraftsForSelected(state.selectedId)
+hydrateCaptureIntent()
 
 const app = document.querySelector('#app')
 let compactPulseTimer = null
 let profileCloseTimer = null
+let reminderTimer = null
 const animatedValueHistory = new Map()
 
 if (app) {
@@ -209,6 +234,7 @@ if (app) {
 document.addEventListener('keydown', handleKeydown)
 
 render({ preserveFocus: false })
+startReminderLoop()
 
 function render({ preserveFocus = true } = {}) {
   if (!app) {
@@ -237,6 +263,12 @@ function render({ preserveFocus = true } = {}) {
     .sort((first, second) => compareRecords(first, second, today))
     .slice(0, 4)
   const todayQueue = getTodayReviewRecords(activeRecords, today).slice(0, 5)
+  const thisWeekQueue = getThisWeekReviewRecords(
+    activeRecords,
+    today,
+    state.settings.reminders.birthdayLeadDays,
+    state.settings.reminders.meetingLeadDays,
+  ).slice(0, 6)
   const groupOptions = getUniqueGroups(scopedRecords)
   const tagOptions = getUniqueTags(scopedRecords)
   const topTagOptions = tagOptions.slice(0, 10)
@@ -248,7 +280,7 @@ function render({ preserveFocus = true } = {}) {
       <header class="hero">
         <div class="hero-copy">
           <div class="brand-lockup">
-            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401c" alt="Roster logo" />
+            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401e" alt="Roster logo" />
             <div class="brand-lockup__text">
               <p class="eyebrow">Roster</p>
               <small>The friend CRM</small>
@@ -362,31 +394,64 @@ function render({ preserveFocus = true } = {}) {
               'today',
               'Today',
               'One-click review queue.',
-              'Birthdays, reconnects, and what deserves a touch today.',
+              'Birthdays, reconnects, and what deserves a touch today or this week.',
               `
-                <ul class="plain-list queue-list">
-                  ${
-                    todayQueue.length
-                      ? todayQueue
-                          .map(
-                            ({ record, reason }) => `
-                              <li>
-                                <button class="queue-item queue-item--today" data-select="${record.id}">
-                                  <span>
-                                    <strong>${escapeHtml(record.name)}</strong>
-                                    <small>${escapeHtml(reason)}</small>
-                                  </span>
-                                  <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
-                                </button>
-                              </li>
-                            `,
-                          )
-                          .join('')
-                      : '<li class="empty-copy">Nothing urgent today. Your circle is in good shape.</li>'
-                  }
-                </ul>
+                <div class="queue-cluster">
+                  <div class="queue-cluster__head">
+                    <strong>Today</strong>
+                    <small>${todayQueue.length ? `${todayQueue.length} live item${todayQueue.length === 1 ? '' : 's'}` : 'Nothing urgent today'}</small>
+                  </div>
+                  <ul class="plain-list queue-list">
+                    ${
+                      todayQueue.length
+                        ? todayQueue
+                            .map(
+                              ({ record, reason }) => `
+                                <li>
+                                  <button class="queue-item queue-item--today" data-select="${record.id}">
+                                    <span>
+                                      <strong>${escapeHtml(record.name)}</strong>
+                                      <small>${escapeHtml(reason)}</small>
+                                    </span>
+                                    <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
+                                  </button>
+                                </li>
+                              `,
+                            )
+                            .join('')
+                        : '<li class="empty-copy">Nothing urgent today. Your circle is in good shape.</li>'
+                    }
+                  </ul>
+                </div>
+                <div class="queue-cluster">
+                  <div class="queue-cluster__head">
+                    <strong>This week</strong>
+                    <small>${thisWeekQueue.length ? `${thisWeekQueue.length} upcoming` : 'No new nudges this week'}</small>
+                  </div>
+                  <ul class="plain-list queue-list">
+                    ${
+                      thisWeekQueue.length
+                        ? thisWeekQueue
+                            .map(
+                              ({ record, reason }) => `
+                                <li>
+                                  <button class="queue-item" data-select="${record.id}">
+                                    <span>
+                                      <strong>${escapeHtml(record.name)}</strong>
+                                      <small>${escapeHtml(reason)}</small>
+                                    </span>
+                                    <i class="status-pill tone-${getAttentionState(record, today).tone}">${formatShortDate(getNextTouchDate(record))}</i>
+                                  </button>
+                                </li>
+                              `,
+                            )
+                            .join('')
+                        : '<li class="empty-copy">No additional follow-ups creeping up this week.</li>'
+                    }
+                  </ul>
+                </div>
               `,
-              `<span class="settings-pill">${buildAnimatedValue(String(todayQueue.length), 'today-queue-count', { tag: 'span', className: 'inline-count' })} due</span>`,
+              `<span class="settings-pill">${buildAnimatedValue(String(todayQueue.length + thisWeekQueue.length), 'today-queue-count', { tag: 'span', className: 'inline-count' })} queued</span>`,
             )}
 
             ${buildSidebarSection(
@@ -674,8 +739,12 @@ function render({ preserveFocus = true } = {}) {
 
     ${buildSettingsPanel(duplicateGroups)}
     ${buildProfilePanel(selectedRecord, today)}
+    ${buildMeetingBriefPanel(selectedRecord, today)}
+    ${buildQuickCapturePanel(selectedRecord)}
+    ${buildMobileQuickBar(selectedRecord)}
     <input id="memory-import-input" type="file" accept=".json,application/json" hidden />
     <input id="csv-import-input" type="file" accept=".csv,text/csv" hidden />
+    <input id="activity-import-input" type="file" accept=".csv,.ics,.txt,text/csv,text/calendar,text/plain" hidden />
     <input id="avatar-input" type="file" accept="image/*" hidden />
     </div>
   `
@@ -793,6 +862,7 @@ function buildInspector(record, today) {
 
     <div class="inspector-actions">
       <button class="button button-primary" data-action="mark-touched">Mark touched today</button>
+      <button class="button button-secondary" data-action="open-brief">Meeting brief</button>
       <button class="button button-secondary" data-action="focus-memory">Add memory</button>
       <button class="button button-secondary" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
         ${record.archived ? 'Restore' : 'Archive'}
@@ -1246,6 +1316,7 @@ function buildProfilePanel(record, today) {
           <button class="button button-secondary" type="button" data-action="toggle-profile-edit">
             ${state.profileEditOpen ? 'Done editing' : 'Edit person'}
           </button>
+          <button class="button button-secondary" type="button" data-action="open-brief">Meeting brief</button>
           <button class="button button-secondary" type="button" data-action="focus-memory">Add memory</button>
           <button class="button button-secondary" type="button" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
             ${record.archived ? 'Restore' : 'Archive'}
@@ -1351,6 +1422,214 @@ function buildProfilePanel(record, today) {
   `
 }
 
+function buildMeetingBriefPanel(record, today) {
+  if (!state.briefOpen || !record) {
+    return ''
+  }
+
+  const brief = buildMeetingBrief(record, today)
+
+  return `
+    <div class="brief-overlay open" data-overlay="brief">
+      <section class="brief-panel" role="dialog" aria-modal="true" aria-label="Meeting brief">
+        <div class="brief-panel__header">
+          <div>
+            <p class="eyebrow">Meeting brief</p>
+            <h2>${escapeHtml(record.name)}</h2>
+            <p class="brief-intro">${escapeHtml(brief.intro)}</p>
+          </div>
+          <button class="settings-close" data-action="close-brief" aria-label="Close meeting brief">Close</button>
+        </div>
+
+        <div class="brief-grid">
+          <article class="brief-card">
+            <p class="eyebrow">Snapshot</p>
+            <ul class="brief-list">
+              ${brief.snapshot.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </article>
+
+          <article class="brief-card">
+            <p class="eyebrow">Talk tracks</p>
+            <ul class="brief-list">
+              ${brief.prompts.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </article>
+
+          <article class="brief-card">
+            <p class="eyebrow">Memory cues</p>
+            ${
+              brief.memories.length
+                ? `<ul class="brief-list">${brief.memories.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+                : '<p class="empty-copy">No saved memories yet. Add a few before the next catch-up.</p>'
+            }
+          </article>
+
+          <article class="brief-card">
+            <p class="eyebrow">Context</p>
+            <ul class="brief-list">
+              ${brief.context.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </article>
+        </div>
+
+        <div class="brief-actions">
+          <button class="button button-primary" type="button" data-action="copy-brief">Copy brief</button>
+          <button class="button button-secondary" type="button" data-action="open-quick-capture" data-quick-capture-mode="memory">Quick capture</button>
+          <button class="button button-secondary" type="button" data-action="mark-touched">Mark touched today</button>
+        </div>
+      </section>
+    </div>
+  `
+}
+
+function buildQuickCapturePanel(selectedRecord) {
+  if (!state.quickCaptureOpen) {
+    return ''
+  }
+
+  const activeRecordId = state.quickCaptureRecordId || selectedRecord?.id || ''
+  const activeRecord = state.records.find((record) => record.id === activeRecordId) || selectedRecord || null
+
+  return `
+    <div class="quick-capture-overlay open" data-overlay="quick-capture">
+      <section class="quick-capture-panel" role="dialog" aria-modal="true" aria-label="Quick capture">
+        <div class="quick-capture__header">
+          <div>
+            <p class="eyebrow">Quick capture</p>
+            <h2>Update the roster fast.</h2>
+            <p class="settings-note">Built for phone-sized moments: save a memory, tag context, or mark a touch without digging through the full profile.</p>
+          </div>
+          <button class="settings-close" data-action="close-quick-capture" aria-label="Close quick capture">Close</button>
+        </div>
+
+        <div class="quick-capture__controls">
+          <label class="toolbar-select">
+            <span>Person</span>
+            <select data-quick-capture-field="recordId">
+              ${state.records
+                .filter((record) => !record.archived)
+                .sort((first, second) => first.name.localeCompare(second.name))
+                .map((record) => `<option value="${record.id}" ${record.id === activeRecordId ? 'selected' : ''}>${escapeHtml(record.name)}</option>`)
+                .join('')}
+            </select>
+          </label>
+
+          <div class="quick-capture__modes">
+            ${[
+              ['memory', 'Memory'],
+              ['tag', 'Tag'],
+              ['touch', 'Touched'],
+            ]
+              .map(
+                ([mode, label]) => `
+                  <button class="token-filter ${state.quickCaptureMode === mode ? 'active' : ''}" type="button" data-action="set-quick-capture-mode" data-quick-capture-mode="${mode}">
+                    ${label}
+                  </button>
+                `,
+              )
+              .join('')}
+          </div>
+        </div>
+
+        ${
+          activeRecord
+            ? `
+              <div class="quick-capture__body">
+                ${
+                  state.quickCaptureMode === 'memory'
+                    ? `
+                      <label class="wide">
+                        <span>Memory for ${escapeHtml(activeRecord.name)}</span>
+                        <textarea data-quick-capture-field="memory" data-focus-key="quick-capture-memory" placeholder="What happened, what matters, and what you want to remember next time">${escapeHtml(state.quickCaptureDraft.memory)}</textarea>
+                      </label>
+                      <div class="quick-capture__actions">
+                        <button class="button button-primary" type="button" data-action="save-quick-capture">Save memory</button>
+                      </div>
+                    `
+                    : state.quickCaptureMode === 'tag'
+                      ? `
+                        <label class="wide">
+                          <span>Tag for ${escapeHtml(activeRecord.name)}</span>
+                          <input data-quick-capture-field="tag" data-focus-key="quick-capture-tag" type="text" placeholder="travel, founder, family..." value="${escapeAttribute(state.quickCaptureDraft.tag)}" />
+                        </label>
+                        <div class="quick-capture__actions">
+                          <button class="button button-primary" type="button" data-action="save-quick-capture">Add tag</button>
+                        </div>
+                      `
+                      : `
+                        <div class="quick-capture-touch">
+                          <strong>${escapeHtml(activeRecord.name)}</strong>
+                          <p>Mark them as touched today and keep the cadence aligned without opening the full editor.</p>
+                          <div class="quick-capture__actions">
+                            <button class="button button-primary" type="button" data-action="save-quick-capture">Mark touched today</button>
+                          </div>
+                        </div>
+                      `
+                }
+              </div>
+            `
+            : '<p class="empty-copy">Add a person first, then quick-capture will follow them.</p>'
+        }
+      </section>
+    </div>
+  `
+}
+
+function buildMobileQuickBar(selectedRecord) {
+  return `
+    <div class="mobile-quickbar">
+      <button class="mobile-quickbar__button" type="button" data-action="open-quick-capture" data-quick-capture-mode="memory">
+        <strong>Memory</strong>
+        <small>${escapeHtml(selectedRecord?.name || 'Pick a person')}</small>
+      </button>
+      <button class="mobile-quickbar__button" type="button" data-action="open-quick-capture" data-quick-capture-mode="tag">
+        <strong>Tag</strong>
+        <small>Fast context</small>
+      </button>
+      <button class="mobile-quickbar__button mobile-quickbar__button--primary" type="button" data-action="open-quick-capture" data-quick-capture-mode="touch">
+        <strong>Touched</strong>
+        <small>Today</small>
+      </button>
+    </div>
+  `
+}
+
+function buildMeetingBrief(record, today) {
+  const attention = getAttentionState(record, today)
+  const nextTouch = getNextTouchDate(record)
+  const birthday = getBirthdayState(record, today)
+  const related = getRelatedRecords(record).map((person) => person.name)
+  const memoryCues = record.memories.slice(0, 3).map((memory) => `${formatCompactDate(memory.date)}: ${truncate(memory.text, 120)}`)
+  const prompts = [
+    record.focus ? `Ask about ${record.focus}.` : `Open by asking what feels most alive for them right now.`,
+    record.notes ? `Use your notes to reconnect naturally: ${truncate(record.notes, 110)}` : `Anchor the conversation with one concrete update you remember from last time.`,
+    record.touchStyle ? `This relationship responds well to ${record.touchStyle.toLowerCase()} energy.` : `Use a tone that matches how you usually connect.`,
+  ]
+
+  if (birthday && birthday.daysUntil <= state.settings.reminders.birthdayLeadDays) {
+    prompts.push(birthday.daysUntil === 0 ? 'Wish them happy birthday today.' : `Mention their birthday coming up on ${formatCompactDate(birthday.date)}.`)
+  }
+
+  return {
+    intro: `${tierMeta[record.tier].label} relationship. ${attention.label}. Best next touch is ${record.touchStyle.toLowerCase()} on ${formatCompactDate(nextTouch)}.`,
+    snapshot: [
+      `Last contact: ${formatCompactDate(record.lastContact)}`,
+      `Next touch: ${formatCompactDate(nextTouch)}`,
+      `Cadence: every ${record.cadenceDays} days`,
+      `Bond health: ${record.bondHealth}%`,
+    ],
+    context: [
+      record.groups.length ? `Groups: ${record.groups.join(', ')}` : 'Groups: none yet',
+      record.tags.length ? `Tags: ${record.tags.join(', ')}` : 'Tags: none yet',
+      related.length ? `Related people: ${related.join(', ')}` : 'Related people: none linked yet',
+      record.city ? `City: ${record.city}` : 'City: not set',
+    ],
+    prompts,
+    memories: memoryCues,
+  }
+}
+
 
 function buildInspectorPanel(selectedRecord, today) {
   return `
@@ -1435,6 +1714,7 @@ function buildSettingsTabContent(duplicateGroups = []) {
 
 function buildGeneralTab() {
   const touchStyles = getTouchStyles(state.settings.defaults.touchStyle)
+  const notificationPermission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
 
   return `
     <section class="settings-card settings-group">
@@ -1555,6 +1835,52 @@ function buildGeneralTab() {
           <button class="button button-secondary tag-add-button" type="button" data-action="commit-touch-style-draft">Add touch style</button>
           <span class="settings-pill">${touchStyles.length} available</span>
         </div>
+      </div>
+    </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Native reminders</p>
+      <div class="settings-row">
+        <strong>Desktop reminder digest</strong>
+        <small>Roster can send a local reminder summary with birthdays, due touches, and pre-meeting nudges while the app is open.</small>
+      </div>
+
+      <div class="settings-switch">
+        <div class="settings-row">
+          <strong>Enable reminders</strong>
+          <small>${notificationPermission === 'granted' ? 'Notifications are allowed on this device.' : notificationPermission === 'denied' ? 'Notifications are blocked right now.' : notificationPermission === 'unsupported' ? 'This environment does not support notifications.' : 'Allow notifications so the digest can reach you.'}</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" data-setting-field="reminders" data-reminder-field="enabled" ${state.settings.reminders.enabled ? 'checked' : ''} ${notificationPermission === 'unsupported' ? 'disabled' : ''} />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Digest range</span>
+          <select data-setting-field="reminders" data-reminder-field="range">
+            <option value="today" ${state.settings.reminders.range === 'today' ? 'selected' : ''}>Today only</option>
+            <option value="week" ${state.settings.reminders.range === 'week' ? 'selected' : ''}>Today + this week</option>
+          </select>
+        </label>
+        <label>
+          <span>Reminder hour</span>
+          <input data-setting-field="reminders" data-reminder-field="hour" type="number" min="0" max="23" value="${state.settings.reminders.hour}" />
+        </label>
+        <label>
+          <span>Birthday lead days</span>
+          <input data-setting-field="reminders" data-reminder-field="birthdayLeadDays" type="number" min="0" max="30" value="${state.settings.reminders.birthdayLeadDays}" />
+        </label>
+        <label>
+          <span>Meeting prep lead days</span>
+          <input data-setting-field="reminders" data-reminder-field="meetingLeadDays" type="number" min="0" max="14" value="${state.settings.reminders.meetingLeadDays}" />
+        </label>
+      </div>
+
+      <div class="settings-actions-grid">
+        <button class="button button-secondary" type="button" data-action="enable-notifications">Enable notifications</button>
+        <button class="button button-secondary" type="button" data-action="send-reminder-preview">Preview digest</button>
       </div>
     </section>
   `
@@ -1698,15 +2024,29 @@ function buildDataTab(duplicateGroups = []) {
       <p class="eyebrow">Migration</p>
       <div class="settings-row">
         <strong>Bring contacts in from CSV exports</strong>
-        <small>Import Google Contacts, Mesh, Clay, or other CRM CSVs and merge them into Roster without retyping everything.</small>
+        <small>Import Google Contacts, Mesh, Clay, or other CRM CSVs and review the field mapping before anything lands in Roster.</small>
       </div>
       <div class="settings-actions-grid">
         <button class="button button-secondary" data-action="import-csv" type="button">Import CSV</button>
+        <button class="button button-secondary" data-action="import-activity" type="button">Import activity</button>
       </div>
       <div class="drop-zone" data-drop-zone="csv">
         Drop a CSV here to import contacts from Mesh, Clay, Google Contacts, or another CRM.
       </div>
+      <p class="empty-copy">Activity import accepts calendar `.ics` exports and CSV-style exports from tools like email, WhatsApp, or other communication logs so `Last contact` can update from real history.</p>
     </section>
+
+    ${
+      state.csvImportReview
+        ? buildCsvImportReview()
+        : ''
+    }
+
+    ${
+      state.activityImportReview
+        ? buildActivityImportReview()
+        : ''
+    }
 
     <section class="settings-card settings-group">
       <p class="eyebrow">Memory file</p>
@@ -1793,7 +2133,94 @@ function buildDataTab(duplicateGroups = []) {
       <p class="eyebrow">Next platform</p>
       <div class="settings-row">
         <strong>Companion ideas</strong>
-        <small>Next up after this release: iPhone companion capture and native Mac menu bar reminders.</small>
+        <small>The local-first app now has quick capture and reminder plumbing. The next real jump would be a native iPhone companion and Mac menu bar reminders.</small>
+      </div>
+    </section>
+  `
+}
+
+function buildCsvImportReview() {
+  const review = state.csvImportReview
+  if (!review) {
+    return ''
+  }
+
+  const mappableTargets = getCsvFieldTargets()
+
+  return `
+    <section class="settings-card settings-group">
+      <p class="eyebrow">CSV review</p>
+      <div class="settings-row">
+        <strong>Map fields before importing</strong>
+        <small>${escapeHtml(review.fileName)} · ${review.rows.length} rows · adjust the inferred field mapping before the merge lands in your roster.</small>
+      </div>
+
+      <div class="import-review-grid">
+        ${review.headers
+          .map((header) => `
+            <div class="import-map-row">
+              <div>
+                <strong>${escapeHtml(header)}</strong>
+                <small>${escapeHtml(truncate(String(review.rows[0]?.[header] || ''), 72) || 'No sample value')}</small>
+              </div>
+              <select data-csv-map-header="${escapeAttribute(header)}">
+                ${mappableTargets
+                  .map((target) => `<option value="${target.key}" ${review.mapping[header] === target.key ? 'selected' : ''}>${target.label}</option>`)
+                  .join('')}
+              </select>
+            </div>
+          `)
+          .join('')}
+      </div>
+
+      <div class="settings-actions-grid">
+        <button class="button button-primary" type="button" data-action="apply-csv-review">Apply import</button>
+        <button class="button button-secondary" type="button" data-action="clear-csv-review">Discard review</button>
+      </div>
+    </section>
+  `
+}
+
+function buildActivityImportReview() {
+  const review = state.activityImportReview
+  if (!review) {
+    return ''
+  }
+
+  return `
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Activity import</p>
+      <div class="settings-row">
+        <strong>Auto-capture review</strong>
+        <small>${escapeHtml(review.fileName)} · ${review.events.length} activity items parsed · ${review.matches.length} roster matches found.</small>
+      </div>
+
+      <div class="duplicate-list">
+        ${
+          review.matches.length
+            ? review.matches
+                .map(
+                  (match) => `
+                    <div class="duplicate-card">
+                      <div class="duplicate-card__head">
+                        <strong>${escapeHtml(match.record.name)}</strong>
+                        <span class="settings-pill">${formatCompactDate(match.latestDate)}</span>
+                      </div>
+                      <p class="empty-copy">${escapeHtml(match.reason)}</p>
+                      <div class="profile-token-row">
+                        ${match.sources.map((source) => `<span class="tag">${escapeHtml(source)}</span>`).join('')}
+                      </div>
+                    </div>
+                  `,
+                )
+                .join('')
+            : '<div class="empty-copy">No activity events matched your roster yet. Try a calendar export or a CSV with date + name/email/phone columns.</div>'
+        }
+      </div>
+
+      <div class="settings-actions-grid">
+        <button class="button button-primary" type="button" data-action="apply-activity-review" ${review.matches.length ? '' : 'disabled'}>Apply last-contact updates</button>
+        <button class="button button-secondary" type="button" data-action="clear-activity-review">Discard review</button>
       </div>
     </section>
   `
@@ -1838,6 +2265,18 @@ function handleClick(event) {
 
     if (overlay.dataset.overlay === 'profile' && !target.closest('.profile-panel')) {
       closeProfilePanel()
+      return
+    }
+
+    if (overlay.dataset.overlay === 'brief' && !target.closest('.brief-panel')) {
+      state.briefOpen = false
+      render({ preserveFocus: false })
+      return
+    }
+
+    if (overlay.dataset.overlay === 'quick-capture' && !target.closest('.quick-capture-panel')) {
+      state.quickCaptureOpen = false
+      render({ preserveFocus: false })
       return
     }
   }
@@ -1904,8 +2343,39 @@ function handleClick(event) {
       case 'import-csv':
         openCsvImportPicker()
         return
+      case 'import-activity':
+        openActivityImportPicker()
+        return
       case 'mark-touched':
         updateSelectedRecord('lastContact', todayStamp())
+        return
+      case 'open-brief':
+        state.briefOpen = true
+        render({ preserveFocus: false })
+        return
+      case 'close-brief':
+        state.briefOpen = false
+        render({ preserveFocus: false })
+        return
+      case 'copy-brief':
+        copyMeetingBrief()
+        return
+      case 'open-quick-capture':
+        state.quickCaptureOpen = true
+        state.quickCaptureMode = action.dataset.quickCaptureMode || state.quickCaptureMode
+        state.quickCaptureRecordId = state.selectedId || state.quickCaptureRecordId
+        render({ preserveFocus: false })
+        return
+      case 'close-quick-capture':
+        state.quickCaptureOpen = false
+        render({ preserveFocus: false })
+        return
+      case 'set-quick-capture-mode':
+        state.quickCaptureMode = action.dataset.quickCaptureMode || 'memory'
+        render({ preserveFocus: false })
+        return
+      case 'save-quick-capture':
+        commitQuickCapture()
         return
       case 'archive-person':
         setSelectedArchived(true)
@@ -1985,6 +2455,26 @@ function handleClick(event) {
         return
       case 'merge-duplicates':
         mergeDuplicateGroup(String(action.dataset.duplicateIds || '').split(',').filter(Boolean))
+        return
+      case 'apply-csv-review':
+        applyCsvImportReview()
+        return
+      case 'clear-csv-review':
+        state.csvImportReview = null
+        render({ preserveFocus: false })
+        return
+      case 'apply-activity-review':
+        applyActivityImportReview()
+        return
+      case 'clear-activity-review':
+        state.activityImportReview = null
+        render({ preserveFocus: false })
+        return
+      case 'enable-notifications':
+        requestReminderPermission()
+        return
+      case 'send-reminder-preview':
+        sendReminderDigest({ force: true })
         return
       default:
         break
@@ -2143,6 +2633,11 @@ function handleInput(event) {
     return
   }
 
+  if (target.id === 'activity-import-input') {
+    importActivityFile(target.files ? target.files[0] : null)
+    return
+  }
+
   if (target.id === 'avatar-input') {
     importAvatarFile(target.files ? target.files[0] : null)
     return
@@ -2162,6 +2657,13 @@ function handleInput(event) {
     } else if (uiFilter === 'direction') {
       state.sortDirection = target.value || 'desc'
     }
+    render({ preserveFocus: false })
+    return
+  }
+
+  const csvMapHeader = target.dataset.csvMapHeader
+  if (csvMapHeader && state.csvImportReview) {
+    state.csvImportReview.mapping[csvMapHeader] = target.value
     render({ preserveFocus: false })
     return
   }
@@ -2214,17 +2716,33 @@ function handleInput(event) {
 
   const settingField = target.dataset.settingField
   if (settingField) {
-    state.settings[settingField] = target instanceof HTMLInputElement && target.type === 'checkbox'
-      ? target.checked
-      : settingField === 'scale'
-        ? clamp(Number(target.value) || defaultSettings.scale, 60, 100)
-        : target.value
+    const reminderField = target.dataset.reminderField
+    if (reminderField) {
+      if (reminderField === 'enabled') {
+        state.settings.reminders.enabled = target instanceof HTMLInputElement ? target.checked : Boolean(target.value)
+      } else if (reminderField === 'hour') {
+        state.settings.reminders.hour = clamp(Number(target.value) || defaultSettings.reminders.hour, 0, 23)
+      } else if (reminderField === 'birthdayLeadDays') {
+        state.settings.reminders.birthdayLeadDays = clamp(Number(target.value) || defaultSettings.reminders.birthdayLeadDays, 0, 30)
+      } else if (reminderField === 'meetingLeadDays') {
+        state.settings.reminders.meetingLeadDays = clamp(Number(target.value) || defaultSettings.reminders.meetingLeadDays, 0, 14)
+      } else if (reminderField === 'range') {
+        state.settings.reminders.range = target.value || defaultSettings.reminders.range
+      }
+    } else {
+      state.settings[settingField] = target instanceof HTMLInputElement && target.type === 'checkbox'
+        ? target.checked
+        : settingField === 'scale'
+          ? clamp(Number(target.value) || defaultSettings.scale, 60, 100)
+          : target.value
+    }
     persistSettings()
     applySettings()
+    startReminderLoop()
     if (settingField === 'compact') {
       animateCompactToggle()
     }
-    if (settingField === 'scale' || settingField === 'compact') {
+    if (settingField === 'scale' || settingField === 'compact' || reminderField) {
       render({ preserveFocus: false })
     }
     return
@@ -2251,6 +2769,16 @@ function handleInput(event) {
     }
 
     persistSettings()
+  }
+
+  const quickCaptureField = target.dataset.quickCaptureField
+  if (quickCaptureField) {
+    if (quickCaptureField === 'recordId') {
+      state.quickCaptureRecordId = target.value || state.selectedId
+      render({ preserveFocus: false })
+    } else {
+      state.quickCaptureDraft[quickCaptureField] = target.value
+    }
   }
 }
 
@@ -2344,6 +2872,20 @@ function handleKeydown(event) {
     return
   }
 
+  if (event.key === 'Escape' && state.briefOpen) {
+    event.preventDefault()
+    state.briefOpen = false
+    render({ preserveFocus: false })
+    return
+  }
+
+  if (event.key === 'Escape' && state.quickCaptureOpen) {
+    event.preventDefault()
+    state.quickCaptureOpen = false
+    render({ preserveFocus: false })
+    return
+  }
+
   if (event.key === 'Escape' && state.settingsOpen) {
     event.preventDefault()
     state.settingsOpen = false
@@ -2399,6 +2941,18 @@ function handleKeydown(event) {
     case 'e':
       event.preventDefault()
       focusByKey('memory-text')
+      break
+    case 'q':
+      event.preventDefault()
+      state.quickCaptureOpen = true
+      state.quickCaptureMode = 'memory'
+      state.quickCaptureRecordId = state.selectedId || state.quickCaptureRecordId
+      render({ preserveFocus: false })
+      break
+    case 'b':
+      event.preventDefault()
+      state.briefOpen = true
+      render({ preserveFocus: false })
       break
     case 't':
       event.preventDefault()
@@ -2527,6 +3081,7 @@ function selectRecord(id, options = {}) {
   }
 
   state.selectedId = id
+  state.quickCaptureRecordId = id
   restoreDraftsForSelected(id)
   updateSelectionUI({ sourceElement: options.sourceElement })
 }
@@ -2545,6 +3100,7 @@ function moveSelection(direction) {
   }
 
   state.selectedId = visible[nextIndex].id
+  state.quickCaptureRecordId = state.selectedId
   restoreDraftsForSelected(state.selectedId)
   updateSelectionUI({ scrollIntoView: true })
 }
@@ -2574,6 +3130,7 @@ function addPerson() {
 
   state.records.unshift(newRecord)
   state.selectedId = newRecord.id
+  state.quickCaptureRecordId = newRecord.id
   state.filter = 'all'
   state.query = ''
   clearDraftsForRecord(newRecord.id)
@@ -2659,6 +3216,14 @@ function openCsvImportPicker() {
   }
 }
 
+function openActivityImportPicker() {
+  const input = document.querySelector('#activity-import-input')
+  if (input instanceof HTMLInputElement) {
+    input.value = ''
+    input.click()
+  }
+}
+
 async function importMemoryFile(file) {
   if (!file) {
     return
@@ -2727,30 +3292,40 @@ async function importCsvFile(file) {
   try {
     const text = await file.text()
     const rows = parseCsvText(text)
-    const importedRecords = rows.map(mapCsvRowToRecord).filter(Boolean)
-
-    if (!importedRecords.length) {
+    if (!rows.length) {
       window.alert('This CSV did not contain any importable contacts.')
       return
     }
 
-    if (!window.confirm(`Import ${importedRecords.length} contacts from CSV and merge them into your roster?`)) {
-      return
+    const headers = Object.keys(rows[0] || {})
+    state.csvImportReview = {
+      fileName: file.name,
+      headers,
+      rows,
+      mapping: inferCsvMapping(headers),
     }
-
-    state.records = mergeImportedRecords(state.records, importedRecords)
-    state.filter = 'all'
-    state.selectedId = state.records[0] ? state.records[0].id : null
-    persistRecords()
-    restoreDraftsForSelected(state.selectedId)
-    const duplicateGroups = getDuplicateGroups(state.records)
-    if (duplicateGroups.length) {
-      state.settingsOpen = true
-      state.settingsTab = 'data'
-    }
+    state.settingsOpen = true
+    state.settingsTab = 'data'
     render({ preserveFocus: false })
   } catch (error) {
     window.alert(`CSV import failed.\n\n${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+async function importActivityFile(file) {
+  if (!file) {
+    return
+  }
+
+  try {
+    const text = await file.text()
+    const review = buildActivityImportReviewState(file.name, text)
+    state.activityImportReview = review
+    state.settingsOpen = true
+    state.settingsTab = 'data'
+    render({ preserveFocus: false })
+  } catch (error) {
+    window.alert(`Activity import failed.\n\n${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -2777,6 +3352,181 @@ async function copyMemoryFile() {
   } catch {
     window.alert('Copy failed. Use Export JSON instead.')
   }
+}
+
+function applyCsvImportReview() {
+  const review = state.csvImportReview
+  if (!review) {
+    return
+  }
+
+  const importedRecords = review.rows
+    .map((row) => mapCsvRowToRecord(row, review.mapping))
+    .filter(Boolean)
+
+  if (!importedRecords.length) {
+    window.alert('The current mapping does not produce any importable contacts yet.')
+    return
+  }
+
+  if (!window.confirm(`Import ${importedRecords.length} contacts from ${review.fileName} and merge them into your roster?`)) {
+    return
+  }
+
+  state.records = mergeImportedRecords(state.records, importedRecords)
+  state.filter = 'all'
+  state.selectedId = state.records[0] ? state.records[0].id : null
+  state.csvImportReview = null
+  persistRecords()
+  restoreDraftsForSelected(state.selectedId)
+  const duplicateGroups = getDuplicateGroups(state.records)
+  if (duplicateGroups.length) {
+    state.settingsOpen = true
+    state.settingsTab = 'data'
+  }
+  render({ preserveFocus: false })
+}
+
+function applyActivityImportReview() {
+  const review = state.activityImportReview
+  if (!review || !review.matches.length) {
+    return
+  }
+
+  state.records = state.records.map((record) => {
+    const match = review.matches.find((entry) => entry.record.id === record.id)
+    if (!match) {
+      return record
+    }
+
+    const importedMemory = {
+      id: makeId(),
+      date: match.latestDate,
+      text: `Imported ${match.sources.join(', ')} activity. ${match.reason}`,
+    }
+
+    return {
+      ...record,
+      lastContact: match.latestDate > record.lastContact ? match.latestDate : record.lastContact,
+      memories: [importedMemory, ...record.memories]
+        .sort((first, second) => second.date.localeCompare(first.date))
+        .slice(0, 50),
+    }
+  })
+
+  state.activityImportReview = null
+  persistRecords()
+  render({ preserveFocus: false })
+}
+
+async function copyMeetingBrief() {
+  const record = getSelectedRecord()
+  if (!record) {
+    return
+  }
+
+  const brief = buildMeetingBrief(record, todayStamp())
+  const payload = [
+    `${record.name} meeting brief`,
+    '',
+    'Snapshot',
+    ...brief.snapshot.map((item) => `- ${item}`),
+    '',
+    'Context',
+    ...brief.context.map((item) => `- ${item}`),
+    '',
+    'Talk tracks',
+    ...brief.prompts.map((item) => `- ${item}`),
+    '',
+    'Memory cues',
+    ...(brief.memories.length ? brief.memories.map((item) => `- ${item}`) : ['- No saved memories yet']),
+  ].join('\n')
+
+  try {
+    await navigator.clipboard.writeText(payload)
+    window.alert('Meeting brief copied to the clipboard.')
+  } catch {
+    window.alert('Could not copy the meeting brief.')
+  }
+}
+
+function commitQuickCapture() {
+  const recordId = state.quickCaptureRecordId || state.selectedId
+  const record = state.records.find((entry) => entry.id === recordId)
+  if (!record) {
+    return
+  }
+
+  if (state.quickCaptureMode === 'touch') {
+    state.selectedId = record.id
+    state.quickCaptureRecordId = record.id
+    state.quickCaptureOpen = false
+    state.records = state.records.map((entry) =>
+      entry.id === record.id
+        ? {
+            ...entry,
+            lastContact: todayStamp(),
+          }
+        : entry,
+    )
+    persistRecords()
+    render({ preserveFocus: false })
+    return
+  }
+
+  if (state.quickCaptureMode === 'tag') {
+    state.selectedId = record.id
+    state.quickCaptureRecordId = record.id
+    state.quickCaptureOpen = false
+    addTagToSelectedRecord(state.quickCaptureDraft.tag)
+    state.quickCaptureDraft.tag = ''
+    return
+  }
+
+  const memoryText = state.quickCaptureDraft.memory.trim()
+  if (!memoryText) {
+    focusByKey('quick-capture-memory')
+    return
+  }
+
+  const memory = {
+    id: makeId(),
+    date: todayStamp(),
+    text: memoryText,
+  }
+
+  state.records = state.records.map((entry) =>
+    entry.id === record.id
+      ? {
+          ...entry,
+          memories: [memory, ...entry.memories].sort((first, second) => second.date.localeCompare(first.date)),
+        }
+      : entry,
+  )
+
+  state.quickCaptureDraft.memory = ''
+  state.quickCaptureOpen = false
+  persistRecords()
+  render({ preserveFocus: false })
+}
+
+async function requestReminderPermission() {
+  if (typeof Notification === 'undefined') {
+    window.alert('Notifications are not supported in this environment.')
+    return
+  }
+
+  const permission = await Notification.requestPermission()
+  if (permission === 'granted') {
+    state.settings.reminders.enabled = true
+    persistSettings()
+    startReminderLoop()
+    sendReminderDigest({ force: true })
+    render({ preserveFocus: false })
+    return
+  }
+
+  render({ preserveFocus: false })
 }
 
 function setSelectedArchived(archived) {
@@ -3240,6 +3990,77 @@ function applySettings() {
   document.documentElement.style.setProperty('--frame-scale', String(state.settings.scale / 100))
 }
 
+function loadReminderLog() {
+  try {
+    const raw = window.localStorage.getItem(REMINDER_LOG_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function persistReminderLog() {
+  window.localStorage.setItem(REMINDER_LOG_KEY, JSON.stringify(state.reminderLog))
+}
+
+function startReminderLoop() {
+  if (reminderTimer) {
+    window.clearInterval(reminderTimer)
+    reminderTimer = null
+  }
+
+  if (!state.settings.reminders.enabled) {
+    return
+  }
+
+  sendReminderDigest()
+  reminderTimer = window.setInterval(() => {
+    sendReminderDigest()
+  }, 60 * 1000)
+}
+
+function sendReminderDigest({ force = false } = {}) {
+  if (!state.settings.reminders.enabled && !force) {
+    return
+  }
+
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return
+  }
+
+  const now = new Date()
+  const hour = now.getHours()
+  const today = todayStamp()
+  if (!force && hour < state.settings.reminders.hour) {
+    return
+  }
+
+  const activeRecords = state.records.filter((record) => !record.archived)
+  const todayItems = getTodayReviewRecords(activeRecords, today)
+  const weekItems = state.settings.reminders.range === 'week'
+    ? getThisWeekReviewRecords(activeRecords, today, state.settings.reminders.birthdayLeadDays, state.settings.reminders.meetingLeadDays)
+    : []
+  const items = [...todayItems, ...weekItems].slice(0, 4)
+  if (!items.length) {
+    return
+  }
+
+  const digestKey = `${today}:${state.settings.reminders.range}`
+  if (!force && state.reminderLog[digestKey]) {
+    return
+  }
+
+  const lines = items.map(({ record, reason }) => `${record.name}: ${reason}`).join('\n')
+  new Notification('Roster reminder', {
+    body: lines,
+    tag: `roster-digest-${digestKey}`,
+  })
+
+  state.reminderLog[digestKey] = new Date().toISOString()
+  persistReminderLog()
+}
+
 function loadRecords() {
   try {
     const raw = window.localStorage.getItem(RECORDS_KEY)
@@ -3411,6 +4232,13 @@ function normalizeSettings(value = {}) {
     compact: typeof value.compact === 'boolean' ? value.compact : defaultSettings.compact,
     scale: clamp(Number(value.scale) || defaultSettings.scale, 60, 100),
     customTouchStyles: resolvedTouchStyles.filter((style) => !baseTouchStyles.includes(style)),
+    reminders: {
+      enabled: typeof value.reminders?.enabled === 'boolean' ? value.reminders.enabled : defaultSettings.reminders.enabled,
+      range: ['today', 'week'].includes(value.reminders?.range) ? value.reminders.range : defaultSettings.reminders.range,
+      hour: clamp(Number(value.reminders?.hour) || defaultSettings.reminders.hour, 0, 23),
+      birthdayLeadDays: clamp(Number(value.reminders?.birthdayLeadDays) || defaultSettings.reminders.birthdayLeadDays, 0, 30),
+      meetingLeadDays: clamp(Number(value.reminders?.meetingLeadDays) || defaultSettings.reminders.meetingLeadDays, 0, 14),
+    },
     defaults: {
       tier: tierOrder.includes(defaults.tier) ? defaults.tier : defaultContactSettings.tier,
       touchStyle: resolvedTouchStyles.includes(normalizeTouchStyle(defaults.touchStyle))
@@ -3570,6 +4398,15 @@ function getTouchStyles(extraStyles = []) {
   return resolveTouchStyles(state.settings.customTouchStyles || [], Array.isArray(extraStyles) ? extraStyles : [extraStyles])
 }
 
+function hydrateCaptureIntent() {
+  const params = new URLSearchParams(window.location.search)
+  const capture = params.get('capture')
+  if (capture && ['memory', 'tag', 'touch'].includes(capture)) {
+    state.quickCaptureOpen = true
+    state.quickCaptureMode = capture
+  }
+}
+
 function addDays(stamp, days) {
   const date = parseStamp(stamp)
   date.setDate(date.getDate() + days)
@@ -3665,6 +4502,30 @@ function getTodayReviewRecords(records, today) {
     .sort((first, second) => first.rank - second.rank || compareRecords(first.record, second.record, today))
 }
 
+function getThisWeekReviewRecords(records, today, birthdayLeadDays = 7, meetingLeadDays = 1) {
+  return records
+    .map((record) => {
+      const attention = getAttentionState(record, today)
+      const birthday = getBirthdayState(record, today)
+
+      if (attention.daysUntil > 0 && attention.daysUntil <= meetingLeadDays) {
+        return { record, rank: 0, reason: `Prep brief ${attention.daysUntil}d before` }
+      }
+
+      if (attention.daysUntil > 0 && attention.daysUntil <= 14) {
+        return { record, rank: 1, reason: `Reconnect in ${attention.daysUntil}d` }
+      }
+
+      if (birthday && birthday.daysUntil > 0 && birthday.daysUntil <= birthdayLeadDays) {
+        return { record, rank: 2, reason: `Birthday in ${birthday.daysUntil}d` }
+      }
+
+      return null
+    })
+    .filter(Boolean)
+    .sort((first, second) => first.rank - second.rank || compareRecords(first.record, second.record, today))
+}
+
 function makeId() {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
     return window.crypto.randomUUID()
@@ -3716,6 +4577,7 @@ function buildMemoryFile() {
     workspace: {
       theme: state.settings.theme,
       customTouchStyles: state.settings.customTouchStyles,
+      reminders: state.settings.reminders,
       defaults: state.settings.defaults,
     },
     instructions: [
@@ -3781,10 +4643,11 @@ function extractImportedSettings(parsed) {
   const candidate = {
     theme: workspace.theme || settings.theme,
     customTouchStyles: workspace.customTouchStyles || settings.customTouchStyles,
+    reminders: workspace.reminders || settings.reminders,
     defaults: workspace.defaults || settings.defaults,
   }
 
-  if (!candidate.theme && !candidate.defaults && !candidate.customTouchStyles) {
+  if (!candidate.theme && !candidate.defaults && !candidate.customTouchStyles && !candidate.reminders) {
     return null
   }
 
@@ -3847,31 +4710,88 @@ function parseCsvText(text) {
     .map((row) => Object.fromEntries(headers.map((header, index) => [header, String(row[index] || '')])))
 }
 
-function mapCsvRowToRecord(row) {
-  const given = cleanImportValue(row['Given Name'])
-  const family = cleanImportValue(row['Family Name'])
-  const name = cleanImportValue(row.Name) || cleanImportValue(`${given} ${family}`) || firstDelimitedValue(row['Phone 1 - Value']) || firstDelimitedValue(row['E-mail 1 - Value'])
+function getCsvFieldTargets() {
+  return [
+    { key: 'ignore', label: 'Ignore' },
+    { key: 'name', label: 'Full name' },
+    { key: 'givenName', label: 'Given name' },
+    { key: 'familyName', label: 'Family name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'phoneSecondary', label: 'Secondary phone' },
+    { key: 'website', label: 'Website' },
+    { key: 'websiteSource', label: 'Source / website label' },
+    { key: 'groupMembership', label: 'Group membership' },
+    { key: 'city', label: 'City' },
+    { key: 'birthday', label: 'Birthday' },
+    { key: 'company', label: 'Company' },
+    { key: 'title', label: 'Title' },
+    { key: 'address', label: 'Address' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'externalId', label: 'External ID' },
+    { key: 'externalSource', label: 'External source' },
+  ]
+}
+
+function inferCsvMapping(headers) {
+  return Object.fromEntries(
+    headers.map((header) => {
+      const normalized = header.toLowerCase()
+      let target = 'ignore'
+
+      if (normalized === 'name' || normalized.includes('full name')) target = 'name'
+      else if (normalized.includes('given')) target = 'givenName'
+      else if (normalized.includes('family') || normalized.includes('last name')) target = 'familyName'
+      else if (normalized.includes('e-mail') || normalized === 'email' || normalized.includes('email')) target = 'email'
+      else if (normalized.includes('phone 1') || normalized === 'phone' || normalized.includes('mobile')) target = 'phone'
+      else if (normalized.includes('phone 2') || normalized.includes('secondary phone')) target = 'phoneSecondary'
+      else if (normalized.includes('website') && normalized.includes('type')) target = 'websiteSource'
+      else if (normalized.includes('website')) target = 'website'
+      else if (normalized.includes('group')) target = 'groupMembership'
+      else if (normalized.includes('city')) target = 'city'
+      else if (normalized.includes('birthday')) target = 'birthday'
+      else if (normalized.includes('organization name') || normalized === 'company') target = 'company'
+      else if (normalized.includes('organization title') || normalized === 'title') target = 'title'
+      else if (normalized.includes('formatted') || normalized.includes('address')) target = 'address'
+      else if (normalized === 'notes' || normalized.includes('note')) target = 'notes'
+      else if (normalized.includes('external id') && normalized.includes('type')) target = 'externalSource'
+      else if (normalized.includes('external id')) target = 'externalId'
+
+      return [header, target]
+    }),
+  )
+}
+
+function mapCsvRowToRecord(row, mapping = inferCsvMapping(Object.keys(row || {}))) {
+  const valueFor = (target) =>
+    Object.entries(mapping)
+      .filter(([, mappedTarget]) => mappedTarget === target)
+      .map(([header]) => row[header])
+      .filter(Boolean)
+  const given = cleanImportValue(valueFor('givenName')[0])
+  const family = cleanImportValue(valueFor('familyName')[0])
+  const name = cleanImportValue(valueFor('name')[0]) || cleanImportValue(`${given} ${family}`) || firstDelimitedValue(valueFor('phone')[0]) || firstDelimitedValue(valueFor('email')[0])
 
   if (!name) {
     return null
   }
 
-  const groupMembership = cleanImportValue(row['Group Membership'])
+  const groupMembership = cleanImportValue(valueFor('groupMembership')[0])
   const tier = inferTier(groupMembership)
-  const city = cleanImportValue(row['Address 1 - City'])
-  const emailValues = parseTripleDelimitedValues(row['E-mail 1 - Value'])
-  const phoneValues = parseTripleDelimitedValues(row['Phone 1 - Value']).concat(parseTripleDelimitedValues(row['Phone 2 - Value']))
-  const websiteType = cleanImportValue(row['Website 1 - Type'])
-  const websiteValue = cleanImportValue(row['Website 1 - Value'])
-  const birthday = cleanImportValue(row.Birthday)
-  const organizationName = cleanImportValue(row['Organization Name'])
-  const organizationTitle = cleanImportValue(row['Organization Title'])
-  const address = cleanImportValue(row['Address 1 - Formatted'])
-  const sourceName = websiteType || cleanImportValue(row['External ID 1 - Type'])
+  const city = cleanImportValue(valueFor('city')[0])
+  const emailValues = valueFor('email').flatMap((value) => parseTripleDelimitedValues(value))
+  const phoneValues = valueFor('phone').concat(valueFor('phoneSecondary')).flatMap((value) => parseTripleDelimitedValues(value))
+  const websiteType = cleanImportValue(valueFor('websiteSource')[0])
+  const websiteValue = cleanImportValue(valueFor('website')[0])
+  const birthday = normalizeImportedDate(valueFor('birthday')[0])
+  const organizationName = cleanImportValue(valueFor('company')[0])
+  const organizationTitle = cleanImportValue(valueFor('title')[0])
+  const address = cleanImportValue(valueFor('address')[0])
+  const sourceName = websiteType || cleanImportValue(valueFor('externalSource')[0])
   const importedGroups = extractImportedGroups(groupMembership)
 
   const notesParts = [
-    cleanImportValue(row.Notes),
+    cleanImportValue(valueFor('notes')[0]),
     birthday ? `Birthday: ${birthday}` : '',
     organizationName || organizationTitle
       ? `Organization: ${[organizationName, organizationTitle].filter(Boolean).join(' · ')}`
@@ -3891,7 +4811,7 @@ function mapCsvRowToRecord(row) {
   )
 
   return standardizeRecord({
-    id: cleanImportValue(row['External ID 1 - Value']) || slugify(name),
+    id: cleanImportValue(valueFor('externalId')[0]) || slugify(name),
     name,
     tier,
     city,
@@ -3919,8 +4839,27 @@ function mapCsvRowToRecord(row) {
     archived: false,
   })
 }
+
 function cleanImportValue(value) {
   return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function normalizeImportedDate(value) {
+  const cleaned = cleanImportValue(value)
+  if (!cleaned) {
+    return ''
+  }
+
+  if (isValidStamp(cleaned)) {
+    return cleaned
+  }
+
+  const parsed = new Date(cleaned)
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+
+  return formatStamp(parsed)
 }
 
 function parseTripleDelimitedValues(value) {
@@ -3965,6 +4904,114 @@ function defaultBondHealthForTier(tier) {
   if (tier === 'close') return 78
   if (tier === 'medium') return 66
   return 54
+}
+
+function buildActivityImportReviewState(fileName, text) {
+  const events = fileName.toLowerCase().endsWith('.ics')
+    ? parseIcsEvents(text)
+    : parseActivityRows(parseCsvText(text))
+
+  return {
+    fileName,
+    events,
+    matches: matchActivitiesToRecords(events),
+  }
+}
+
+function parseActivityRows(rows) {
+  return rows
+    .map((row) => {
+      const entries = Object.entries(row)
+      const findBy = (...patterns) =>
+        entries.find(([header]) => patterns.some((pattern) => header.toLowerCase().includes(pattern)))?.[1] || ''
+      const date = normalizeImportedDate(findBy('date', 'time', 'timestamp', 'start'))
+      const name = cleanImportValue(findBy('name', 'contact', 'person'))
+      const email = cleanImportValue(findBy('email'))
+      const phone = cleanImportValue(findBy('phone'))
+      const source = cleanImportValue(findBy('source', 'channel', 'app')) || 'activity import'
+      const note = cleanImportValue(findBy('subject', 'title', 'message', 'summary', 'notes'))
+      if (!date || (!name && !email && !phone)) {
+        return null
+      }
+      return { date, name, email, phone, source, note }
+    })
+    .filter(Boolean)
+}
+
+function parseIcsEvents(text) {
+  const blocks = String(text || '').split('BEGIN:VEVENT').slice(1)
+  return blocks
+    .map((block) => {
+      const lines = block.split(/\r?\n/)
+      const getLineValue = (prefixes) => {
+        const line = lines.find((entry) => prefixes.some((prefix) => entry.startsWith(prefix)))
+        return line ? line.split(':').slice(1).join(':') : ''
+      }
+      const rawDate = getLineValue(['DTSTART', 'DTSTART;VALUE=DATE'])
+      const date = normalizeImportedDate(rawDate.replace(/^(\d{4})(\d{2})(\d{2}).*$/, '$1-$2-$3'))
+      const note = cleanImportValue(getLineValue(['SUMMARY', 'DESCRIPTION']))
+      const attendees = lines
+        .filter((line) => line.startsWith('ATTENDEE') || line.startsWith('ORGANIZER'))
+        .map((line) => line.split(':').slice(1).join(':'))
+        .join(' ')
+      const emailMatch = attendees.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)
+      const name = cleanImportValue(note.replace(/https?:\/\/\S+/g, ''))
+      if (!date || (!name && !emailMatch)) {
+        return null
+      }
+      return {
+        date,
+        name,
+        email: emailMatch ? emailMatch[0] : '',
+        phone: '',
+        source: 'calendar',
+        note,
+      }
+    })
+    .filter(Boolean)
+}
+
+function matchActivitiesToRecords(events) {
+  return state.records
+    .filter((record) => !record.archived)
+    .map((record) => {
+      const matches = events.filter((event) => activityMatchesRecord(event, record))
+      if (!matches.length) {
+        return null
+      }
+      const latest = matches.slice().sort((first, second) => second.date.localeCompare(first.date))[0]
+      const sources = Array.from(new Set(matches.map((match) => match.source || 'activity import')))
+      return {
+        record,
+        latestDate: latest.date,
+        sources,
+        reason: latest.note || `Matched ${matches.length} imported activit${matches.length === 1 ? 'y' : 'ies'}.`,
+      }
+    })
+    .filter(Boolean)
+}
+
+function activityMatchesRecord(event, record) {
+  const normalizedEventName = normalizePersonKey(event.name)
+  const normalizedRecordName = normalizePersonKey(record.name)
+  const eventEmail = String(event.email || '').toLowerCase()
+  const recordEmail = String(record.contact?.email || '').toLowerCase()
+  const eventPhone = String(event.phone || '').replace(/\D+/g, '')
+  const recordPhone = String(record.contact?.phone || '').replace(/\D+/g, '')
+
+  if (eventEmail && recordEmail && eventEmail === recordEmail) {
+    return true
+  }
+
+  if (eventPhone && recordPhone && eventPhone === recordPhone) {
+    return true
+  }
+
+  if (normalizedEventName && normalizedRecordName && (normalizedEventName.includes(normalizedRecordName) || normalizedRecordName.includes(normalizedEventName))) {
+    return true
+  }
+
+  return false
 }
 
 function standardizeRecord(record) {

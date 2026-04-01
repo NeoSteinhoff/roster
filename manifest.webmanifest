@@ -1,0 +1,33 @@
+{
+  "name": "Roster",
+  "short_name": "Roster",
+  "description": "The friend CRM for remembering people, follow-ups, memories, and context.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0f16",
+  "theme_color": "#0b0f16",
+  "icons": [
+    {
+      "src": "./assets/icon.iconset/icon_256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/icon.iconset/icon_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick memory",
+      "short_name": "Memory",
+      "url": "./index.html?capture=memory"
+    },
+    {
+      "name": "Quick tag",
+      "short_name": "Tag",
+      "url": "./index.html?capture=tag"
+    }
+  ]
+}

@@ -5,8 +5,11 @@ Roster is a dark, local-first friend CRM for keeping relationships intentional.
 It includes:
 - tiered relationship tracking
 - custom groups and tags
+- meeting briefs and quick capture
+- local reminder digests with birthdays and this-week queue
 - memory timeline and readable JSON export/import
-- CSV import from contacts and other CRMs
+- CSV import from contacts and other CRMs with field mapping review
+- activity import review for calendar and communication exports
 - archive instead of delete
 - compact and full views
 - full profile view with contact card, socials, related people, and avatar support
@@ -57,4 +60,4 @@ The JSON memory file is designed to stay readable and editable by humans.
 
 ## Current version
 
-`v0.8.0`
+`v0.9.0`

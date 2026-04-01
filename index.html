@@ -4,12 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0f16" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Roster</title>
-    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401c" />
-    <link rel="stylesheet" href="./styles.css?v=20260401c" />
+    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401e" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260401e" />
+    <link rel="apple-touch-icon" href="./assets/icon.iconset/icon_512x512.png" />
+    <link rel="stylesheet" href="./styles.css?v=20260401e" />
     <script>
       const renderBootMessage = (message) => {
         const root = document.getElementById('app')
@@ -30,6 +35,12 @@
         const reason = event.reason && event.reason.message ? event.reason.message : String(event.reason)
         renderBootMessage(`The app failed while starting: ${reason}`)
       })
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js?v=20260401e').catch(() => {})
+        })
+      }
     </script>
   </head>
   <body data-theme="mesh">
@@ -39,6 +50,6 @@
         <div style="color:#bfb4a8">Loading your dark relationship dashboard...</div>
       </div>
     </div>
-    <script type="module" src="./app.js?v=20260401c"></script>
+    <script type="module" src="./app.js?v=20260401e"></script>
   </body>
   </html>
