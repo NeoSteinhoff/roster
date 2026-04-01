@@ -335,7 +335,7 @@ function render({ preserveFocus = true } = {}) {
                   ${filterButton('archived', 'Archived', 'Stored away, not deleted', archivedCount)}
                 </div>
               `,
-              `<span class="settings-pill">${buildAnimatedValue(String(activeRecords.length), 'sidebar-active-count', { tag: 'span', className: 'inline-count' })} active</span>`,
+              `${buildAnimatedValue(String(activeRecords.length), 'sidebar-active-count', { tag: 'span', className: 'inline-count' })} active`,
             )}
 
             ${buildSidebarSection(
@@ -452,7 +452,7 @@ function render({ preserveFocus = true } = {}) {
                   </ul>
                 </div>
               `,
-              `<span class="settings-pill">${buildAnimatedValue(String(todayQueue.length + thisWeekQueue.length), 'today-queue-count', { tag: 'span', className: 'inline-count' })} queued</span>`,
+              `${buildAnimatedValue(String(todayQueue.length + thisWeekQueue.length), 'today-queue-count', { tag: 'span', className: 'inline-count' })} queued`,
             )}
 
             ${buildSidebarSection(
@@ -484,7 +484,7 @@ function render({ preserveFocus = true } = {}) {
                   }
                 </div>
               `,
-              groupOptions.length ? `<span class="settings-pill">${groupOptions.length} groups</span>` : '',
+              groupOptions.length ? `${groupOptions.length} groups` : '',
             )}
 
             ${buildSidebarSection(
@@ -516,7 +516,7 @@ function render({ preserveFocus = true } = {}) {
                   }
                 </div>
               `,
-              topTagOptions.length ? `<span class="settings-pill">${topTagOptions.length} live</span>` : '',
+              topTagOptions.length ? `${topTagOptions.length} live` : '',
             )}
 
             ${buildSidebarSection(
@@ -544,7 +544,7 @@ function render({ preserveFocus = true } = {}) {
                     .join('')}
                 </ul>
               `,
-              `<span class="settings-pill">${buildAnimatedValue(String(topQueue.length), 'top-queue-count', { tag: 'span', className: 'inline-count' })} shown</span>`,
+              `${buildAnimatedValue(String(topQueue.length), 'top-queue-count', { tag: 'span', className: 'inline-count' })} shown`,
             )}
           </div>
         </aside>
@@ -807,12 +807,20 @@ function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') 
         aria-expanded="${open ? 'true' : 'false'}"
       >
         <span class="sidebar-summary-card__copy">
-          ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+          ${
+            eyebrow || badge
+              ? `
+                <span class="sidebar-summary-card__topline">
+                  ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+                  ${badge ? `<span class="sidebar-inline-meta">${badge}</span>` : ''}
+                </span>
+              `
+              : ''
+          }
           <strong>${title}</strong>
           ${summary ? `<small>${summary}</small>` : ''}
         </span>
         <span class="sidebar-summary-card__meta">
-          ${badge || ''}
           <i class="sidebar-summary-card__chevron" aria-hidden="true"></i>
         </span>
       </button>

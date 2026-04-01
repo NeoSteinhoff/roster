@@ -574,8 +574,15 @@ p {
 .sidebar-summary-card__copy {
   flex: 1;
   display: grid;
-  align-content: space-between;
-  gap: 14px;
+  align-content: start;
+  gap: 12px;
+}
+
+.sidebar-summary-card__topline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .sidebar-summary-card__copy strong {
@@ -590,17 +597,24 @@ p {
 }
 
 .sidebar-summary-card__copy small {
-  max-width: 17ch;
+  max-width: none;
   color: var(--muted-strong);
   font-size: 0.95rem;
   line-height: 1.45;
 }
 
+.sidebar-inline-meta {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 .sidebar-summary-card__meta {
   display: grid;
-  align-content: space-between;
+  align-content: center;
   justify-items: end;
-  gap: 12px;
+  gap: 0;
   color: var(--muted);
 }
 

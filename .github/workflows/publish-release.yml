@@ -1,0 +1,71 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Package app
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          npx electron-packager . Roster --platform=darwin --arch=${{ matrix.arch }} --icon=assets/roster-logo.icns --app-version=$VERSION --build-version=$VERSION --overwrite --prune=true --out=dist
+      - name: Build DMG
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          hdiutil create -volname "Roster" -srcfolder "dist/Roster-darwin-${{ matrix.arch }}/Roster.app" -ov -format UDZO "Roster-${VERSION}-mac-${{ matrix.arch }}.dmg"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Roster-*.dmg
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Package app
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          npx electron-packager . Roster --platform=win32 --arch=x64 --icon=assets/roster-logo.ico --app-version=$VERSION --build-version=$VERSION --overwrite --prune=true --out=dist
+          powershell -Command "Compress-Archive -Path dist/Roster-win32-x64/* -DestinationPath Roster-${VERSION}-windows-x64.zip"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Roster-*.zip
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Package app
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          npx electron-packager . Roster --platform=linux --arch=x64 --icon=assets/roster-logo.svg.png --app-version=$VERSION --build-version=$VERSION --overwrite --prune=true --out=dist
+          tar -czf Roster-${VERSION}-linux-x64.tar.gz -C dist Roster-linux-x64
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Roster-*.tar.gz

@@ -8,7 +8,9 @@
     "package:mac": "electron-packager . Roster --platform=darwin --arch=arm64 --icon=assets/roster-logo.icns --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist",
     "package:mac:intel": "electron-packager . Roster --platform=darwin --arch=x64 --icon=assets/roster-logo.icns --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist",
     "package:win": "electron-packager . Roster --platform=win32 --arch=x64 --overwrite --prune=true --out=dist",
-    "package:linux": "electron-packager . Roster --platform=linux --arch=x64 --icon=assets/roster-logo.svg.png --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist"
+    "package:linux": "electron-packager . Roster --platform=linux --arch=x64 --icon=assets/roster-logo.svg.png --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist",
+    "release:publish": "bash scripts/release.sh",
+    "clean:artifacts": "bash scripts/clean-artifacts.sh"
   },
   "devDependencies": {
     "electron": "^41.1.0",
