@@ -167,12 +167,12 @@ const state = {
   multiSelectMode: false,
   expandedTier: 'inner-circle',
   sidebarPanels: {
-    views: true,
-    today: true,
-    tiers: true,
-    groups: true,
-    tags: true,
-    queue: true,
+    views: false,
+    today: false,
+    tiers: false,
+    groups: false,
+    tags: false,
+    queue: false,
   },
   inspectorPanels: {
     basics: true,
@@ -796,16 +796,33 @@ function buildCollapsibleSection({ scope, key, eyebrow, title, summary = '', bad
 }
 
 function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') {
-  return buildCollapsibleSection({
-    scope: 'sidebar',
-    key,
-    eyebrow,
-    title,
-    summary,
-    badge,
-    content,
-    open: state.sidebarPanels[key] !== false,
-  })
+  const open = state.sidebarPanels[key] !== false
+
+  return `
+    <section class="sidebar-section ${open ? 'is-open' : 'is-closed'}">
+      <button
+        class="sidebar-summary-card"
+        type="button"
+        data-toggle-panel="sidebar:${key}"
+        aria-expanded="${open ? 'true' : 'false'}"
+      >
+        <span class="sidebar-summary-card__copy">
+          ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+          <strong>${title}</strong>
+          ${summary ? `<small>${summary}</small>` : ''}
+        </span>
+        <span class="sidebar-summary-card__meta">
+          ${badge || ''}
+          <i class="sidebar-summary-card__chevron" aria-hidden="true"></i>
+        </span>
+      </button>
+      <div class="sidebar-section__body">
+        <div class="sidebar-section__body-inner">
+          ${content}
+        </div>
+      </div>
+    </section>
+  `
 }
 
 function buildInspectorSection(key, eyebrow, title, summary, content, badge = '') {
