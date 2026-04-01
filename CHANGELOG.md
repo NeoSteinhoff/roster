@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.0
+- Fixed the animated numbers so they settle cleanly in their resting state while keeping the roll effect.
+- Added collapsible left-rail sections for views, tiers, groups, tags, today, and the attention queue.
+- Rebuilt the right inspector into bundled collapsible sections for basics, contact card, related people, notes, and memory lane.
+- Added custom touch-style management so new contact styles can be created, reused, and set as defaults.
+- Added a proper close animation for the fullscreen profile and refined the motion layer across panels and counts.
+- Tightened the sidebar and inspector structure so the workspace feels calmer, more unified, and easier to scan.
+
 ## v0.7.0
 - Replaced the broken digit animation with cleaner rolling value transitions.
 - Added full-profile editing, archive, and delete actions directly in the fullscreen profile.

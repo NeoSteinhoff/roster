@@ -1,10 +1,11 @@
 const RECORDS_KEY = 'friends-circle-crm.static.v4'
 const SETTINGS_KEY = 'friends-circle-crm.settings.v1'
 const DRAFTS_KEY = 'friends-circle-crm.drafts.v1'
-const APP_VERSION = '0.7.0'
+const APP_VERSION = '0.8.0'
+const PROFILE_CLOSE_MS = 220
 
 const tierOrder = ['inner-circle', 'close', 'medium', 'acquaintance']
-const touchStyles = ['Text', 'Call', 'Coffee', 'Dinner', 'Voice note']
+const baseTouchStyles = ['Text', 'Call', 'Coffee', 'Dinner', 'Voice note']
 const suggestedTags = [
   'family',
   'local',
@@ -122,6 +123,7 @@ const defaultSettings = {
   hints: true,
   compact: false,
   scale: 67,
+  customTouchStyles: [],
   defaults: { ...defaultContactSettings },
 }
 
@@ -153,8 +155,24 @@ const state = {
   selectedId: null,
   selectedIds: [],
   expandedTier: 'inner-circle',
+  sidebarPanels: {
+    views: true,
+    today: true,
+    tiers: true,
+    groups: true,
+    tags: true,
+    queue: true,
+  },
+  inspectorPanels: {
+    basics: true,
+    notes: true,
+    contact: true,
+    related: true,
+    memory: true,
+  },
   settingsOpen: false,
   profileOpen: false,
+  profileClosing: false,
   profileEditOpen: false,
   settings: loadSettings(),
   settingsTab: 'general',
@@ -164,6 +182,7 @@ const state = {
   tagDraft: '',
   groupDraft: '',
   relatedDraft: '',
+  touchStyleDraft: '',
   memoryDraft: {
     date: todayStamp(),
     text: '',
@@ -175,6 +194,7 @@ restoreDraftsForSelected(state.selectedId)
 
 const app = document.querySelector('#app')
 let compactPulseTimer = null
+let profileCloseTimer = null
 const animatedValueHistory = new Map()
 
 if (app) {
@@ -228,7 +248,7 @@ function render({ preserveFocus = true } = {}) {
       <header class="hero">
         <div class="hero-copy">
           <div class="brand-lockup">
-            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401b" alt="Roster logo" />
+            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401c" alt="Roster logo" />
             <div class="brand-lockup__text">
               <p class="eyebrow">Roster</p>
               <small>The friend CRM</small>
@@ -258,196 +278,209 @@ function render({ preserveFocus = true } = {}) {
 
       <main class="workspace">
         <aside class="panel">
-          <section class="panel-block">
-            <div class="panel-heading">
-              <p class="eyebrow">Views</p>
-              <h2>Filter the circle.</h2>
-              <p class="sidebar-context">Focused on <strong data-live-selected-name>${escapeHtml(selectedRecord?.name || 'nobody yet')}</strong></p>
-            </div>
+          <div class="sidebar-stack">
+            ${buildSidebarSection(
+              'views',
+              'Views',
+              'Filter the circle.',
+              `Focused on ${escapeHtml(selectedRecord?.name || 'nobody yet')}`,
+              `
+                <p class="sidebar-context">Focused on <strong data-live-selected-name>${escapeHtml(selectedRecord?.name || 'nobody yet')}</strong></p>
+                <div class="filter-stack">
+                  ${filterButton('all', 'All people', 'Everything in one view', activeRecords.length)}
+                  ${filterButton('needs-attention', 'Needs attention', 'Overdue or due this week', needsAttentionCount)}
+                  ${tierOrder
+                    .map((tier) =>
+                      filterButton(
+                        tier,
+                        tierMeta[tier].label,
+                        tierMeta[tier].cadenceHint,
+                        activeRecords.filter((record) => record.tier === tier).length,
+                      ),
+                    )
+                    .join('')}
+                  ${filterButton('archived', 'Archived', 'Stored away, not deleted', archivedCount)}
+                </div>
+              `,
+              `<span class="settings-pill">${buildAnimatedValue(String(activeRecords.length), 'sidebar-active-count', { tag: 'span', className: 'inline-count' })} active</span>`,
+            )}
 
-            <div class="filter-stack">
-              ${filterButton('all', 'All people', 'Everything in one view', activeRecords.length)}
-              ${filterButton('needs-attention', 'Needs attention', 'Overdue or due this week', needsAttentionCount)}
-              ${tierOrder
-                .map((tier) =>
-                  filterButton(
-                    tier,
-                    tierMeta[tier].label,
-                    tierMeta[tier].cadenceHint,
-                    activeRecords.filter((record) => record.tier === tier).length,
-                  ),
-                )
-                .join('')}
-              ${filterButton('archived', 'Archived', 'Stored away, not deleted', archivedCount)}
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-heading">
-              <p class="eyebrow">Tiers</p>
-              <h3>Open a lane and jump to people.</h3>
-            </div>
-
-            <div class="tier-accordion">
-              ${tierOrder
-                .map(
-                  (tier) => `
-                    <section class="tier-card ${state.expandedTier === tier ? 'open' : ''}">
-                      <button class="tier-card__header" data-expand-tier="${tier}">
-                        <span>
-                          <strong>${tierMeta[tier].label}</strong>
-                          <small>${tierMeta[tier].cadenceHint}</small>
-                        </span>
-                        <em>${buildAnimatedValue(String(activeRecords.filter((record) => record.tier === tier).length), `tier-${tier}-count`, { tag: 'span', className: 'tier-count' })}</em>
-                      </button>
-                      ${
-                        state.expandedTier === tier
-                          ? `
-                            <div class="tier-card__body">
-                              <p>${tierMeta[tier].description}</p>
-                              <div class="tier-card__people">
-                                ${
-                                  activeRecords.filter((record) => record.tier === tier).length
-                                    ? activeRecords
-                                        .filter((record) => record.tier === tier)
-                                        .sort((first, second) => first.name.localeCompare(second.name))
-                                        .map(
-                                          (record) => `
-                                            <button class="tier-person" data-select="${record.id}">
-                                              <span>${escapeHtml(record.name)}</span>
-                                              <small>${getAttentionState(record, today).label}</small>
-                                            </button>
-                                          `,
-                                        )
-                                        .join('')
-                                    : '<div class="empty-copy">No people in this tier yet.</div>'
-                                }
-                              </div>
-                            </div>
-                          `
-                          : ''
-                      }
-                    </section>
-                  `,
-                )
-                .join('')}
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-heading">
-              <p class="eyebrow">Today</p>
-              <h3>One-click review queue.</h3>
-            </div>
-
-            <ul class="plain-list queue-list">
-              ${
-                todayQueue.length
-                  ? todayQueue
-                      .map(
-                        ({ record, reason }) => `
-                          <li>
-                            <button class="queue-item queue-item--today" data-select="${record.id}">
-                              <span>
-                                <strong>${escapeHtml(record.name)}</strong>
-                                <small>${escapeHtml(reason)}</small>
-                              </span>
-                              <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
-                            </button>
-                          </li>
-                        `,
-                      )
-                      .join('')
-                  : '<li class="empty-copy">Nothing urgent today. Your circle is in good shape.</li>'
-              }
-            </ul>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-heading">
-              <p class="eyebrow">Groups</p>
-              <h3>Custom lanes across your roster.</h3>
-            </div>
-
-            <div class="token-filter-grid">
-              <button class="token-filter ${state.groupFilter ? '' : 'active'}" type="button" data-filter-group="">
-                All groups
-              </button>
-              ${
-                groupOptions.length
-                  ? groupOptions
-                      .map(
-                        (group) => `
-                          <button
-                            class="token-filter ${state.groupFilter === group ? 'active' : ''}"
-                            type="button"
-                            data-filter-group="${escapeAttribute(group)}"
-                          >
-                            ${escapeHtml(group)}
+            ${buildSidebarSection(
+              'tiers',
+              'Tiers',
+              'Open a lane and jump to people.',
+              'The grouped view for close, medium, and broader orbit.',
+              `
+                <div class="tier-accordion">
+                  ${tierOrder
+                    .map(
+                      (tier) => `
+                        <section class="tier-card ${state.expandedTier === tier ? 'open' : ''}">
+                          <button class="tier-card__header" data-expand-tier="${tier}">
+                            <span>
+                              <strong>${tierMeta[tier].label}</strong>
+                              <small>${tierMeta[tier].cadenceHint}</small>
+                            </span>
+                            <em>${buildAnimatedValue(String(activeRecords.filter((record) => record.tier === tier).length), `tier-${tier}-count`, { tag: 'span', className: 'tier-count' })}</em>
                           </button>
-                        `,
-                      )
-                      .join('')
-                  : '<div class="empty-copy">Groups appear once you add them to people.</div>'
-              }
-            </div>
-          </section>
+                          ${
+                            state.expandedTier === tier
+                              ? `
+                                <div class="tier-card__body">
+                                  <p>${tierMeta[tier].description}</p>
+                                  <div class="tier-card__people">
+                                    ${
+                                      activeRecords.filter((record) => record.tier === tier).length
+                                        ? activeRecords
+                                            .filter((record) => record.tier === tier)
+                                            .sort((first, second) => first.name.localeCompare(second.name))
+                                            .map(
+                                              (record) => `
+                                                <button class="tier-person" data-select="${record.id}">
+                                                  <span>${escapeHtml(record.name)}</span>
+                                                  <small>${getAttentionState(record, today).label}</small>
+                                                </button>
+                                              `,
+                                            )
+                                            .join('')
+                                        : '<div class="empty-copy">No people in this tier yet.</div>'
+                                    }
+                                  </div>
+                                </div>
+                              `
+                              : ''
+                          }
+                        </section>
+                      `,
+                    )
+                    .join('')}
+                </div>
+              `,
+            )}
 
-          <section class="panel-block">
-            <div class="panel-heading">
-              <p class="eyebrow">Tags</p>
-              <h3>Fast cuts across shared context.</h3>
-            </div>
+            ${buildSidebarSection(
+              'today',
+              'Today',
+              'One-click review queue.',
+              'Birthdays, reconnects, and what deserves a touch today.',
+              `
+                <ul class="plain-list queue-list">
+                  ${
+                    todayQueue.length
+                      ? todayQueue
+                          .map(
+                            ({ record, reason }) => `
+                              <li>
+                                <button class="queue-item queue-item--today" data-select="${record.id}">
+                                  <span>
+                                    <strong>${escapeHtml(record.name)}</strong>
+                                    <small>${escapeHtml(reason)}</small>
+                                  </span>
+                                  <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
+                                </button>
+                              </li>
+                            `,
+                          )
+                          .join('')
+                      : '<li class="empty-copy">Nothing urgent today. Your circle is in good shape.</li>'
+                  }
+                </ul>
+              `,
+              `<span class="settings-pill">${buildAnimatedValue(String(todayQueue.length), 'today-queue-count', { tag: 'span', className: 'inline-count' })} due</span>`,
+            )}
 
-            <div class="token-filter-grid">
-              <button class="token-filter ${state.tagFilter ? '' : 'active'}" type="button" data-filter-tag="">
-                All tags
-              </button>
-              ${
-                topTagOptions.length
-                  ? topTagOptions
-                      .map(
-                        (tag) => `
-                          <button
-                            class="token-filter ${state.tagFilter === tag ? 'active' : ''}"
-                            type="button"
-                            data-filter-tag="${escapeAttribute(tag)}"
-                          >
-                            ${escapeHtml(tag)}
+            ${buildSidebarSection(
+              'groups',
+              'Groups',
+              'Custom lanes across your roster.',
+              'Flexible collections layered on top of the core tiers.',
+              `
+                <div class="token-filter-grid">
+                  <button class="token-filter ${state.groupFilter ? '' : 'active'}" type="button" data-filter-group="">
+                    All groups
+                  </button>
+                  ${
+                    groupOptions.length
+                      ? groupOptions
+                          .map(
+                            (group) => `
+                              <button
+                                class="token-filter ${state.groupFilter === group ? 'active' : ''}"
+                                type="button"
+                                data-filter-group="${escapeAttribute(group)}"
+                              >
+                                ${escapeHtml(group)}
+                              </button>
+                            `,
+                          )
+                          .join('')
+                      : '<div class="empty-copy">Groups appear once you add them to people.</div>'
+                  }
+                </div>
+              `,
+              groupOptions.length ? `<span class="settings-pill">${groupOptions.length} groups</span>` : '',
+            )}
+
+            ${buildSidebarSection(
+              'tags',
+              'Tags',
+              'Fast cuts across shared context.',
+              'Use tags as the quick language of your relationships.',
+              `
+                <div class="token-filter-grid">
+                  <button class="token-filter ${state.tagFilter ? '' : 'active'}" type="button" data-filter-tag="">
+                    All tags
+                  </button>
+                  ${
+                    topTagOptions.length
+                      ? topTagOptions
+                          .map(
+                            (tag) => `
+                              <button
+                                class="token-filter ${state.tagFilter === tag ? 'active' : ''}"
+                                type="button"
+                                data-filter-tag="${escapeAttribute(tag)}"
+                              >
+                                ${escapeHtml(tag)}
+                              </button>
+                            `,
+                          )
+                          .join('')
+                      : '<div class="empty-copy">Tags appear once they are added to people.</div>'
+                  }
+                </div>
+              `,
+              topTagOptions.length ? `<span class="settings-pill">${topTagOptions.length} live</span>` : '',
+            )}
+
+            ${buildSidebarSection(
+              'queue',
+              'Attention queue',
+              'Who to reach out to next.',
+              'Your priority list, sorted by urgency.',
+              `
+                <ul class="plain-list queue-list">
+                  ${topQueue
+                    .map((record) => {
+                      const attention = getAttentionState(record, today)
+                      return `
+                        <li>
+                          <button class="queue-item" data-select="${record.id}">
+                            <span>
+                              <strong>${escapeHtml(record.name)}</strong>
+                              <small>${tierMeta[record.tier].label}</small>
+                            </span>
+                            <i class="status-pill tone-${attention.tone}">${attention.label}</i>
                           </button>
-                        `,
-                      )
-                      .join('')
-                  : '<div class="empty-copy">Tags appear once they are added to people.</div>'
-              }
-            </div>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-heading">
-              <p class="eyebrow">Attention queue</p>
-              <h3>Who to reach out to next.</h3>
-            </div>
-
-            <ul class="plain-list queue-list">
-              ${topQueue
-                .map((record) => {
-                  const attention = getAttentionState(record, today)
-                  return `
-                    <li>
-                      <button class="queue-item" data-select="${record.id}">
-                        <span>
-                          <strong>${escapeHtml(record.name)}</strong>
-                          <small>${tierMeta[record.tier].label}</small>
-                        </span>
-                        <i class="status-pill tone-${attention.tone}">${attention.label}</i>
-                      </button>
-                    </li>
-                  `
-                })
-                .join('')}
-            </ul>
-          </section>
+                        </li>
+                      `
+                    })
+                    .join('')}
+                </ul>
+              `,
+              `<span class="settings-pill">${buildAnimatedValue(String(topQueue.length), 'top-queue-count', { tag: 'span', className: 'inline-count' })} shown</span>`,
+            )}
+          </div>
         </aside>
 
         <section class="panel">
@@ -656,6 +689,55 @@ function render({ preserveFocus = true } = {}) {
   })
 }
 
+function buildCollapsibleSection({ scope, key, eyebrow, title, summary = '', badge = '', content = '', open = true, className = '' }) {
+  return `
+    <section class="collapsible-section collapsible-section--${scope} ${open ? 'is-open' : 'is-closed'} ${className}">
+      <button class="collapsible-toggle" type="button" data-toggle-panel="${scope}:${key}" aria-expanded="${open ? 'true' : 'false'}">
+        <span class="collapsible-toggle__copy">
+          ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+          <strong>${title}</strong>
+          ${summary ? `<small>${summary}</small>` : ''}
+        </span>
+        <span class="collapsible-toggle__meta">
+          ${badge || ''}
+          <i class="collapsible-chevron" aria-hidden="true"></i>
+        </span>
+      </button>
+      <div class="collapsible-body">
+        <div class="collapsible-body__inner">
+          ${content}
+        </div>
+      </div>
+    </section>
+  `
+}
+
+function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') {
+  return buildCollapsibleSection({
+    scope: 'sidebar',
+    key,
+    eyebrow,
+    title,
+    summary,
+    badge,
+    content,
+    open: state.sidebarPanels[key] !== false,
+  })
+}
+
+function buildInspectorSection(key, eyebrow, title, summary, content, badge = '') {
+  return buildCollapsibleSection({
+    scope: 'inspector',
+    key,
+    eyebrow,
+    title,
+    summary,
+    badge,
+    content,
+    open: state.inspectorPanels[key] !== false,
+  })
+}
+
 function buildInspector(record, today) {
   const attention = getAttentionState(record, today)
   const tagSuggestions = getTagSuggestions(record, state.tagDraft)
@@ -664,6 +746,7 @@ function buildInspector(record, today) {
   const relatedSuggestions = getRelatedSuggestions(record, state.relatedDraft)
   const nextTouchDate = getNextTouchDate(record)
   const nextTouchLabel = formatCompactDate(nextTouchDate)
+  const touchStyleCount = getTouchStyles(record.touchStyle).length
 
   return `
     <div class="inspector-overview">
@@ -716,7 +799,60 @@ function buildInspector(record, today) {
       </button>
     </div>
 
-    <form class="editor-form">
+    <div class="inspector-stack">
+      ${buildInspectorSection(
+        'basics',
+        'Basics',
+        'Relationship settings',
+        'Name, tier, cadence, style, groups, and tags in one place.',
+        buildInspectorBasics(record, tagSuggestions, groupSuggestions),
+        `<span class="settings-pill">${touchStyleCount} styles</span>`,
+      )}
+
+      ${buildInspectorSection(
+        'contact',
+        'Contact card',
+        'Reachability and social context',
+        'Email, socials, company, birthday, and home address.',
+        buildContactCard(record),
+        `<span class="settings-pill">${contactCompletionCount(record)} fields</span>`,
+      )}
+
+      ${buildInspectorSection(
+        'related',
+        'Related people',
+        'Linked relationships',
+        'Jump between family, friends, collaborators, or shared circles.',
+        buildRelatedPeopleEditor(record, relatedRecords, relatedSuggestions),
+        `<span class="settings-pill">${relatedRecords.length} linked</span>`,
+      )}
+
+      ${buildInspectorSection(
+        'notes',
+        'Notes',
+        'Keep narrative context',
+        'Short factual notes that help future-you reconnect smoothly.',
+        buildNotesEditor(record),
+        record.notes ? '<span class="settings-pill">Saved</span>' : '<span class="settings-pill">Empty</span>',
+      )}
+
+      ${buildInspectorSection(
+        'memory',
+        'Memory lane',
+        `${record.memories.length} memories saved`,
+        'A running trail of moments, changes, and reminders for next time.',
+        buildMemorySection(record),
+        `<span class="settings-pill">${record.memories.length ? 'Sticky recall' : 'Empty'}</span>`,
+      )}
+    </div>
+  `
+}
+
+function buildInspectorBasics(record, tagSuggestions, groupSuggestions) {
+  const touchStyles = getTouchStyles(record.touchStyle)
+
+  return `
+    <form class="editor-form editor-form--section">
       <div class="form-grid">
         <label>
           <span>Name</span>
@@ -896,10 +1032,102 @@ function buildInspector(record, today) {
           }
         </div>
       </label>
+    </form>
+  `
+}
 
-      ${buildContactCard(record)}
-      ${buildRelatedPeopleEditor(record, relatedRecords, relatedSuggestions)}
+function buildContactCard(record) {
+  return `
+    <div class="contact-card">
+      <div class="contact-card__summary">
+        <span>
+          <strong>Contact card</strong>
+          <small>Email, socials, website, and home address</small>
+        </span>
+        <em>Added ${formatCompactDate(record.createdAt)}</em>
+      </div>
+      <div class="contact-card__grid">
+        ${contactFields
+          .map(
+            (field) => `
+              <label>
+                <span>${field.label}</span>
+                <input
+                  data-record-field="contact.${field.key}"
+                  type="${field.type}"
+                  value="${escapeAttribute(record.contact[field.key] || '')}"
+                  placeholder="${field.placeholder}"
+                />
+              </label>
+            `,
+          )
+          .join('')}
+        <label class="wide">
+          <span>Home address</span>
+          <textarea data-record-field="contact.address" placeholder="Apartment, home, or mailing address">${escapeHtml(record.contact.address || '')}</textarea>
+        </label>
+      </div>
+    </div>
+  `
+}
 
+function buildRelatedPeopleEditor(record, relatedRecords, relatedSuggestions) {
+  return `
+    <div class="related-editor">
+      <div class="tag-editor__chips relation-chip-row">
+        ${
+          relatedRecords.length
+            ? relatedRecords
+                .map(
+                  (related) => `
+                    <span class="relation-chip">
+                      <button type="button" class="relation-chip__link" data-select="${related.id}">${escapeHtml(related.name)}</button>
+                      <button type="button" class="relation-chip__remove" data-remove-related="${related.id}">remove</button>
+                    </span>
+                  `,
+                )
+                .join('')
+            : '<span class="tag ghost">No related people yet</span>'
+        }
+      </div>
+
+      <input
+        data-related-input
+        data-focus-key="record-related"
+        list="related-people-list"
+        type="text"
+        value="${escapeAttribute(state.relatedDraft)}"
+        placeholder="Type a person name and press Enter"
+      />
+      <datalist id="related-people-list">
+        ${getAvailableRelationOptions(record).map((candidate) => `<option value="${escapeAttribute(candidate.name)}"></option>`).join('')}
+      </datalist>
+      <div class="tag-editor__actions">
+        <button class="button button-secondary tag-add-button" type="button" data-action="commit-related-draft">Link person</button>
+        <span class="settings-pill">Clickable relationship graph</span>
+      </div>
+      ${
+        relatedSuggestions.length
+          ? `
+            <div class="tag-suggestions">
+              ${relatedSuggestions
+                .map(
+                  (candidate) => `
+                    <button class="tag-suggestion" type="button" data-add-related="${escapeAttribute(candidate.id)}">${escapeHtml(candidate.name)}</button>
+                  `,
+                )
+                .join('')}
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `
+}
+
+function buildNotesEditor(record) {
+  return `
+    <form class="editor-form editor-form--section">
       <label class="wide">
         <span>Notes</span>
         <textarea
@@ -909,16 +1137,12 @@ function buildInspector(record, today) {
         >${escapeHtml(record.notes)}</textarea>
       </label>
     </form>
+  `
+}
 
+function buildMemorySection(record) {
+  return `
     <section class="memory-section">
-      <div class="memory-head">
-        <div class="panel-heading">
-          <p class="eyebrow">Memory lane</p>
-          <h3>${record.memories.length} memories saved</h3>
-        </div>
-        <span class="settings-pill">${record.memories.length ? 'Sticky recall' : 'Empty'}</span>
-      </div>
-
       <form class="memory-composer" data-form="memory">
         <div class="form-grid">
           <label>
@@ -986,106 +1210,15 @@ function buildInspector(record, today) {
   `
 }
 
-function buildContactCard(record) {
-  return `
-    <details class="contact-card wide" open>
-      <summary>
-        <span>
-          <strong>Contact card</strong>
-          <small>Email, socials, website, and home address</small>
-        </span>
-        <em>Added ${formatCompactDate(record.createdAt)}</em>
-      </summary>
-      <div class="contact-card__grid">
-        ${contactFields
-          .map(
-            (field) => `
-              <label>
-                <span>${field.label}</span>
-                <input
-                  data-record-field="contact.${field.key}"
-                  type="${field.type}"
-                  value="${escapeAttribute(record.contact[field.key] || '')}"
-                  placeholder="${field.placeholder}"
-                />
-              </label>
-            `,
-          )
-          .join('')}
-        <label class="wide">
-          <span>Home address</span>
-          <textarea data-record-field="contact.address" placeholder="Apartment, home, or mailing address">${escapeHtml(record.contact.address || '')}</textarea>
-        </label>
-      </div>
-    </details>
-  `
-}
-
-function buildRelatedPeopleEditor(record, relatedRecords, relatedSuggestions) {
-  return `
-    <label class="wide">
-      <span>Related people</span>
-      <div class="related-editor">
-        <div class="tag-editor__chips relation-chip-row">
-          ${
-            relatedRecords.length
-              ? relatedRecords
-                  .map(
-                    (related) => `
-                      <span class="relation-chip">
-                        <button type="button" class="relation-chip__link" data-select="${related.id}">${escapeHtml(related.name)}</button>
-                        <button type="button" class="relation-chip__remove" data-remove-related="${related.id}">remove</button>
-                      </span>
-                    `,
-                  )
-                  .join('')
-              : '<span class="tag ghost">No related people yet</span>'
-          }
-        </div>
-
-        <input
-          data-related-input
-          data-focus-key="record-related"
-          list="related-people-list"
-          type="text"
-          value="${escapeAttribute(state.relatedDraft)}"
-          placeholder="Type a person name and press Enter"
-        />
-        <datalist id="related-people-list">
-          ${getAvailableRelationOptions(record).map((candidate) => `<option value="${escapeAttribute(candidate.name)}"></option>`).join('')}
-        </datalist>
-        <div class="tag-editor__actions">
-          <button class="button button-secondary tag-add-button" type="button" data-action="commit-related-draft">Link person</button>
-          <span class="settings-pill">Clickable relationship graph</span>
-        </div>
-        ${
-          relatedSuggestions.length
-            ? `
-              <div class="tag-suggestions">
-                ${relatedSuggestions
-                  .map(
-                    (candidate) => `
-                      <button class="tag-suggestion" type="button" data-add-related="${escapeAttribute(candidate.id)}">${escapeHtml(candidate.name)}</button>
-                    `,
-                  )
-                  .join('')}
-              </div>
-            `
-            : ''
-        }
-      </div>
-    </label>
-  `
-}
-
 function buildProfilePanel(record, today) {
-  if (!state.profileOpen || !record) {
+  if ((!state.profileOpen && !state.profileClosing) || !record) {
     return ''
   }
 
   const attention = getAttentionState(record, today)
   const nextTouchDate = getNextTouchDate(record)
   const relatedRecords = getRelatedRecords(record)
+  const touchStyles = getTouchStyles(record.touchStyle, state.settings.defaults.touchStyle)
   const contactRows = contactFields
     .filter((field) => record.contact[field.key])
     .map(
@@ -1099,8 +1232,8 @@ function buildProfilePanel(record, today) {
     .join('')
 
   return `
-    <div class="profile-overlay open" data-overlay="profile">
-      <section class="profile-panel" role="dialog" aria-modal="true" aria-label="Full profile">
+    <div class="profile-overlay open ${state.profileClosing ? 'closing' : ''}" data-overlay="profile">
+      <section class="profile-panel ${state.profileClosing ? 'closing' : ''}" role="dialog" aria-modal="true" aria-label="Full profile">
         <div class="profile-panel__header">
           <div>
             <p class="eyebrow">Full profile</p>
@@ -1301,6 +1434,8 @@ function buildSettingsTabContent(duplicateGroups = []) {
 }
 
 function buildGeneralTab() {
+  const touchStyles = getTouchStyles(state.settings.defaults.touchStyle)
+
   return `
     <section class="settings-card settings-group">
       <p class="eyebrow">Visual mode</p>
@@ -1385,10 +1520,49 @@ function buildGeneralTab() {
         />
       </label>
     </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Touch styles</p>
+      <div class="settings-row">
+        <strong>Customize how you reconnect</strong>
+        <small>Add your own contact styles so the inspector, defaults, and queue reflect how you actually keep in touch.</small>
+      </div>
+      <div class="tag-editor">
+        <div class="tag-editor__chips">
+          ${touchStyles
+            .map((style) =>
+              baseTouchStyles.includes(style)
+                ? `<span class="tag tag-chip tag-chip--static"><span>${escapeHtml(style)}</span><small>core</small></span>`
+                : `
+                  <button class="tag tag-chip" type="button" data-remove-touch-style="${escapeAttribute(style)}">
+                    <span>${escapeHtml(style)}</span>
+                    <small>remove</small>
+                  </button>
+                `,
+            )
+            .join('')}
+        </div>
+
+        <input
+          data-touch-style-input
+          data-focus-key="setting-touch-style"
+          type="text"
+          value="${escapeAttribute(state.touchStyleDraft)}"
+          placeholder="Lunch, walk, voice memo, WhatsApp..."
+        />
+
+        <div class="tag-editor__actions">
+          <button class="button button-secondary tag-add-button" type="button" data-action="commit-touch-style-draft">Add touch style</button>
+          <span class="settings-pill">${touchStyles.length} available</span>
+        </div>
+      </div>
+    </section>
   `
 }
 
 function buildDefaultsTab() {
+  const touchStyles = getTouchStyles(state.settings.defaults.touchStyle)
+
   return `
     <section class="settings-card settings-group">
       <p class="eyebrow">New contact template</p>
@@ -1542,7 +1716,7 @@ function buildDataTab(duplicateGroups = []) {
       </div>
       <div class="settings-help">
         <span class="settings-pill">format: friends-circle-memory-file</span>
-        <span class="settings-pill">version: 3</span>
+        <span class="settings-pill">version: 4</span>
         <span class="settings-pill">profile + contact + relations</span>
         <span class="settings-pill">app: v${APP_VERSION}</span>
       </div>
@@ -1663,10 +1837,15 @@ function handleClick(event) {
     }
 
     if (overlay.dataset.overlay === 'profile' && !target.closest('.profile-panel')) {
-      state.profileOpen = false
-      render({ preserveFocus: false })
+      closeProfilePanel()
       return
     }
+  }
+
+  const panelToggle = target.closest('[data-toggle-panel]')
+  if (panelToggle instanceof HTMLElement) {
+    togglePanel(panelToggle.dataset.togglePanel)
+    return
   }
 
   const action = target.closest('[data-action]')
@@ -1743,14 +1922,17 @@ function handleClick(event) {
         focusByKey('memory-text')
         return
       case 'open-profile':
+        if (profileCloseTimer) {
+          window.clearTimeout(profileCloseTimer)
+          profileCloseTimer = null
+        }
         state.profileOpen = true
+        state.profileClosing = false
         state.profileEditOpen = false
         render({ preserveFocus: false })
         return
       case 'close-profile':
-        state.profileOpen = false
-        state.profileEditOpen = false
-        render({ preserveFocus: false })
+        closeProfilePanel()
         return
       case 'toggle-profile-edit':
         state.profileEditOpen = !state.profileEditOpen
@@ -1767,6 +1949,9 @@ function handleClick(event) {
         return
       case 'commit-group-draft':
         commitGroupDraft()
+        return
+      case 'commit-touch-style-draft':
+        commitTouchStyleDraft()
         return
       case 'commit-related-draft':
         commitRelatedDraft()
@@ -1833,6 +2018,12 @@ function handleClick(event) {
   const removeGroupButton = target.closest('[data-remove-group]')
   if (removeGroupButton instanceof HTMLElement) {
     removeGroupFromSelectedRecord(removeGroupButton.dataset.removeGroup)
+    return
+  }
+
+  const removeTouchStyleButton = target.closest('[data-remove-touch-style]')
+  if (removeTouchStyleButton instanceof HTMLElement) {
+    removeCustomTouchStyle(removeTouchStyleButton.dataset.removeTouchStyle)
     return
   }
 
@@ -1924,6 +2115,14 @@ function handleInput(event) {
     if (event.type === 'change' && target.value.trim()) {
       commitGroupDraft()
       return
+    }
+    return
+  }
+
+  if (target.hasAttribute('data-touch-style-input')) {
+    state.touchStyleDraft = target.value
+    if (event.type === 'change' && target.value.trim()) {
+      commitTouchStyleDraft()
     }
     return
   }
@@ -2117,6 +2316,14 @@ function handleKeydown(event) {
     }
   }
 
+  if (event.target instanceof HTMLInputElement && event.target.hasAttribute('data-touch-style-input')) {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault()
+      commitTouchStyleDraft()
+      return
+    }
+  }
+
   if (event.target instanceof HTMLInputElement && event.target.hasAttribute('data-related-input') && event.key === 'Enter') {
     event.preventDefault()
     commitRelatedDraft()
@@ -2133,8 +2340,7 @@ function handleKeydown(event) {
 
   if (event.key === 'Escape' && state.profileOpen) {
     event.preventDefault()
-    state.profileOpen = false
-    render({ preserveFocus: false })
+    closeProfilePanel()
     return
   }
 
@@ -2182,7 +2388,12 @@ function handleKeydown(event) {
       break
     case 'p':
       event.preventDefault()
+      if (profileCloseTimer) {
+        window.clearTimeout(profileCloseTimer)
+        profileCloseTimer = null
+      }
       state.profileOpen = true
+      state.profileClosing = false
       render({ preserveFocus: false })
       break
     case 'e':
@@ -2260,6 +2471,54 @@ function setFilter(filter) {
     restoreDraftsForSelected(state.selectedId)
   }
   render({ preserveFocus: false })
+}
+
+function togglePanel(token) {
+  const [scope, key] = String(token || '').split(':')
+  if (!scope || !key) {
+    return
+  }
+
+  if (scope === 'sidebar' && key in state.sidebarPanels) {
+    state.sidebarPanels[key] = !state.sidebarPanels[key]
+    render({ preserveFocus: false })
+    return
+  }
+
+  if (scope === 'inspector' && key in state.inspectorPanels) {
+    state.inspectorPanels[key] = !state.inspectorPanels[key]
+    render({ preserveFocus: false })
+  }
+}
+
+function closeProfilePanel() {
+  if (!state.profileOpen && !state.profileClosing) {
+    return
+  }
+
+  if (profileCloseTimer) {
+    window.clearTimeout(profileCloseTimer)
+    profileCloseTimer = null
+  }
+
+  state.profileEditOpen = false
+
+  if (!state.settings.motion) {
+    state.profileOpen = false
+    state.profileClosing = false
+    render({ preserveFocus: false })
+    return
+  }
+
+  state.profileClosing = true
+  render({ preserveFocus: false })
+
+  profileCloseTimer = window.setTimeout(() => {
+    state.profileOpen = false
+    state.profileClosing = false
+    profileCloseTimer = null
+    render({ preserveFocus: false })
+  }, PROFILE_CLOSE_MS)
 }
 
 function selectRecord(id, options = {}) {
@@ -2627,6 +2886,10 @@ function commitRelatedDraft() {
   addRelatedPersonToSelectedRecord(state.relatedDraft)
 }
 
+function commitTouchStyleDraft() {
+  addCustomTouchStyle(state.touchStyleDraft)
+}
+
 function addTagToSelectedRecord(tag) {
   const record = getSelectedRecord()
   const nextTag = normalizeTag(tag)
@@ -2728,6 +2991,55 @@ function addRelatedPersonToSelectedRecord(value) {
   persistRecords()
   render({ preserveFocus: false })
   focusByKey('record-related')
+}
+
+function addCustomTouchStyle(value) {
+  const nextStyle = normalizeTouchStyle(value)
+  if (!nextStyle) {
+    focusByKey('setting-touch-style')
+    return
+  }
+
+  const touchStyles = getTouchStyles()
+  if (touchStyles.some((style) => style.toLowerCase() === nextStyle.toLowerCase())) {
+    state.touchStyleDraft = ''
+    render({ preserveFocus: false })
+    focusByKey('setting-touch-style')
+    return
+  }
+
+  state.settings.customTouchStyles = resolveTouchStyles(state.settings.customTouchStyles, [nextStyle]).filter(
+    (style) => !baseTouchStyles.includes(style),
+  )
+  state.touchStyleDraft = ''
+  persistSettings()
+  render({ preserveFocus: false })
+  focusByKey('setting-touch-style')
+}
+
+function removeCustomTouchStyle(value) {
+  const nextStyle = normalizeTouchStyle(value)
+  if (!nextStyle) {
+    return
+  }
+
+  state.settings.customTouchStyles = (state.settings.customTouchStyles || []).filter(
+    (style) => style.toLowerCase() !== nextStyle.toLowerCase(),
+  )
+
+  if (state.settings.defaults.touchStyle.toLowerCase() === nextStyle.toLowerCase()) {
+    state.settings.defaults.touchStyle = defaultContactSettings.touchStyle
+  }
+
+  state.records = state.records.map((record) =>
+    record.touchStyle.toLowerCase() === nextStyle.toLowerCase()
+      ? { ...record, touchStyle: defaultTouchStyleForTier(record.tier) }
+      : record,
+  )
+
+  persistSettings()
+  persistRecords()
+  render({ preserveFocus: false })
 }
 
 function removeTagFromSelectedRecord(tag) {
@@ -3084,6 +3396,12 @@ function clearDraftsForRecord(id) {
 
 function normalizeSettings(value = {}) {
   const defaults = value.defaults && typeof value.defaults === 'object' ? value.defaults : {}
+  const customTouchStyles = Array.isArray(value.customTouchStyles)
+    ? value.customTouchStyles
+    : typeof value.customTouchStyles === 'string'
+      ? value.customTouchStyles.split(',')
+      : []
+  const resolvedTouchStyles = resolveTouchStyles(customTouchStyles, [defaults.touchStyle])
 
   return {
     theme: themeOptions.some((theme) => theme.value === value.theme) ? value.theme : defaultSettings.theme,
@@ -3092,9 +3410,12 @@ function normalizeSettings(value = {}) {
     hints: typeof value.hints === 'boolean' ? value.hints : defaultSettings.hints,
     compact: typeof value.compact === 'boolean' ? value.compact : defaultSettings.compact,
     scale: clamp(Number(value.scale) || defaultSettings.scale, 60, 100),
+    customTouchStyles: resolvedTouchStyles.filter((style) => !baseTouchStyles.includes(style)),
     defaults: {
       tier: tierOrder.includes(defaults.tier) ? defaults.tier : defaultContactSettings.tier,
-      touchStyle: touchStyles.includes(defaults.touchStyle) ? defaults.touchStyle : defaultContactSettings.touchStyle,
+      touchStyle: resolvedTouchStyles.includes(normalizeTouchStyle(defaults.touchStyle))
+        ? normalizeTouchStyle(defaults.touchStyle)
+        : defaultContactSettings.touchStyle,
       cadenceDays: Math.max(1, Number(defaults.cadenceDays) || defaultContactSettings.cadenceDays),
       bondHealth: clamp(Number(defaults.bondHealth) || defaultContactSettings.bondHealth, 0, 100),
       city: String(defaults.city || defaultContactSettings.city),
@@ -3193,10 +3514,8 @@ function buildAnimatedValue(value, key, options = {}) {
 
   return `
     <${tag} class="animated-value ${className} ${stableClass}" aria-label="${escapeAttribute(display)}">
-      <span class="animated-value__stack">
-        <span>${escapeHtml(previousDisplay)}</span>
-        <span>${escapeHtml(display)}</span>
-      </span>
+      <span class="animated-value__current">${escapeHtml(display)}</span>
+      ${previousDisplay === display ? '' : `<span class="animated-value__previous" aria-hidden="true">${escapeHtml(previousDisplay)}</span>`}
     </${tag}>
   `
 }
@@ -3223,6 +3542,32 @@ function truncate(value, maxLength) {
 
 function slugify(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+function normalizeTouchStyle(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function resolveTouchStyles(customStyles = [], extraStyles = []) {
+  const styles = new Map()
+
+  ;[...baseTouchStyles, ...customStyles, ...extraStyles]
+    .map((style) => normalizeTouchStyle(style))
+    .filter(Boolean)
+    .forEach((style) => {
+      const key = style.toLowerCase()
+      if (!styles.has(key)) {
+        styles.set(key, style)
+      }
+    })
+
+  return Array.from(styles.values())
+}
+
+function getTouchStyles(extraStyles = []) {
+  return resolveTouchStyles(state.settings.customTouchStyles || [], Array.isArray(extraStyles) ? extraStyles : [extraStyles])
 }
 
 function addDays(stamp, days) {
@@ -3365,11 +3710,12 @@ function statusHeadline(attention) {
 function buildMemoryFile() {
   return {
     format: 'friends-circle-memory-file',
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     readme: 'Human-readable memory file for Roster.',
     workspace: {
       theme: state.settings.theme,
+      customTouchStyles: state.settings.customTouchStyles,
       defaults: state.settings.defaults,
     },
     instructions: [
@@ -3434,10 +3780,11 @@ function extractImportedSettings(parsed) {
   const settings = parsed && typeof parsed.settings === 'object' ? parsed.settings : {}
   const candidate = {
     theme: workspace.theme || settings.theme,
+    customTouchStyles: workspace.customTouchStyles || settings.customTouchStyles,
     defaults: workspace.defaults || settings.defaults,
   }
 
-  if (!candidate.theme && !candidate.defaults) {
+  if (!candidate.theme && !candidate.defaults && !candidate.customTouchStyles) {
     return null
   }
 
@@ -3663,9 +4010,7 @@ function standardizeRecord(record) {
       ? String(record.lastContact || connectionPlan.lastContact)
       : todayStamp(),
     cadenceDays: Math.max(1, Number(record.cadenceDays ?? connectionPlan.cadenceDays) || 21),
-    touchStyle: touchStyles.includes(record.touchStyle || connectionPlan.touchStyle)
-      ? String(record.touchStyle || connectionPlan.touchStyle)
-      : 'Text',
+    touchStyle: normalizeTouchStyle(record.touchStyle || connectionPlan.touchStyle) || 'Text',
     bondHealth: clamp(Number(record.bondHealth ?? relationship.bondHealth) || 70, 0, 100),
     focus: String(record.focus || relationship.focus || ''),
     notes: String(record.notes || relationship.notes || ''),
@@ -3959,6 +4304,11 @@ function buildRecordAvatar(record, size = 'small') {
       ${record.avatar ? `<img src="${escapeAttribute(record.avatar)}" alt="${escapeAttribute(record.name)}" />` : `<span>${initials}</span>`}
     </div>
   `
+}
+
+function contactCompletionCount(record) {
+  const values = Object.values(record.contact || {}).filter((value) => String(value || '').trim())
+  return values.length
 }
 
 function buildContactLink(key, value) {
