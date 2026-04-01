@@ -1,7 +1,7 @@
 const RECORDS_KEY = 'friends-circle-crm.static.v4'
 const SETTINGS_KEY = 'friends-circle-crm.settings.v1'
 const DRAFTS_KEY = 'friends-circle-crm.drafts.v1'
-const APP_VERSION = '0.6.0'
+const APP_VERSION = '0.7.0'
 
 const tierOrder = ['inner-circle', 'close', 'medium', 'acquaintance']
 const touchStyles = ['Text', 'Call', 'Coffee', 'Dinner', 'Voice note']
@@ -148,11 +148,14 @@ const state = {
   query: '',
   groupFilter: '',
   tagFilter: '',
+  sortDirection: 'desc',
   sortMode: 'attention',
   selectedId: null,
+  selectedIds: [],
   expandedTier: 'inner-circle',
   settingsOpen: false,
   profileOpen: false,
+  profileEditOpen: false,
   settings: loadSettings(),
   settingsTab: 'general',
   pendingImportMode: 'replace',
@@ -179,6 +182,8 @@ if (app) {
   app.addEventListener('input', handleInput)
   app.addEventListener('change', handleInput)
   app.addEventListener('submit', handleSubmit)
+  app.addEventListener('dragover', handleDragOver)
+  app.addEventListener('drop', handleDrop)
 }
 
 document.addEventListener('keydown', handleKeydown)
@@ -211,9 +216,11 @@ function render({ preserveFocus = true } = {}) {
     .slice()
     .sort((first, second) => compareRecords(first, second, today))
     .slice(0, 4)
+  const todayQueue = getTodayReviewRecords(activeRecords, today).slice(0, 5)
   const groupOptions = getUniqueGroups(scopedRecords)
   const tagOptions = getUniqueTags(scopedRecords)
   const topTagOptions = tagOptions.slice(0, 10)
+  const duplicateGroups = getDuplicateGroups(records)
 
   app.innerHTML = `
     <div class="app-frame" style="--frame-scale:${state.settings.scale / 100}">
@@ -221,7 +228,7 @@ function render({ preserveFocus = true } = {}) {
       <header class="hero">
         <div class="hero-copy">
           <div class="brand-lockup">
-            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401a" alt="Roster logo" />
+            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401b" alt="Roster logo" />
             <div class="brand-lockup__text">
               <p class="eyebrow">Roster</p>
               <small>The friend CRM</small>
@@ -329,6 +336,35 @@ function render({ preserveFocus = true } = {}) {
 
           <section class="panel-block">
             <div class="panel-heading">
+              <p class="eyebrow">Today</p>
+              <h3>One-click review queue.</h3>
+            </div>
+
+            <ul class="plain-list queue-list">
+              ${
+                todayQueue.length
+                  ? todayQueue
+                      .map(
+                        ({ record, reason }) => `
+                          <li>
+                            <button class="queue-item queue-item--today" data-select="${record.id}">
+                              <span>
+                                <strong>${escapeHtml(record.name)}</strong>
+                                <small>${escapeHtml(reason)}</small>
+                              </span>
+                              <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
+                            </button>
+                          </li>
+                        `,
+                      )
+                      .join('')
+                  : '<li class="empty-copy">Nothing urgent today. Your circle is in good shape.</li>'
+              }
+            </ul>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
               <p class="eyebrow">Groups</p>
               <h3>Custom lanes across your roster.</h3>
             </div>
@@ -422,7 +458,15 @@ function render({ preserveFocus = true } = {}) {
             </div>
 
             <div class="roster-toolbar">
-              <span class="settings-pill">${filterLabel(state.filter)}</span>
+              <label class="toolbar-select toolbar-select--compact">
+                <span>Tier</span>
+                <select data-ui-filter="tier" data-focus-key="tier-filter">
+                  <option value="all" ${state.filter === 'all' ? 'selected' : ''}>All people</option>
+                  <option value="needs-attention" ${state.filter === 'needs-attention' ? 'selected' : ''}>Needs attention</option>
+                  ${tierOrder.map((tier) => `<option value="${tier}" ${state.filter === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
+                  <option value="archived" ${state.filter === 'archived' ? 'selected' : ''}>Archived</option>
+                </select>
+              </label>
               <label class="toolbar-select">
                 <span>Group</span>
                 <select data-ui-filter="group" data-focus-key="group-filter">
@@ -442,12 +486,39 @@ function render({ preserveFocus = true } = {}) {
                 <select data-ui-filter="sort" data-focus-key="sort-mode">
                   <option value="attention" ${state.sortMode === 'attention' ? 'selected' : ''}>Attention</option>
                   <option value="name" ${state.sortMode === 'name' ? 'selected' : ''}>Name</option>
+                  <option value="created" ${state.sortMode === 'created' ? 'selected' : ''}>Created</option>
                   <option value="group" ${state.sortMode === 'group' ? 'selected' : ''}>Group</option>
                   <option value="tag" ${state.sortMode === 'tag' ? 'selected' : ''}>Tag</option>
                 </select>
               </label>
+              <label class="toolbar-select toolbar-select--compact">
+                <span>Direction</span>
+                <select data-ui-filter="direction" data-focus-key="sort-direction">
+                  <option value="desc" ${state.sortDirection === 'desc' ? 'selected' : ''}>Newest first</option>
+                  <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
+                </select>
+              </label>
             </div>
           </div>
+
+          ${
+            state.selectedIds.length
+              ? `
+                <div class="bulk-bar">
+                  <div class="bulk-bar__copy">
+                    <p class="eyebrow">Bulk actions</p>
+                    <strong>${buildAnimatedValue(String(state.selectedIds.length), 'bulk-count', { tag: 'span', className: 'inline-count' })} selected</strong>
+                  </div>
+                  <div class="bulk-bar__actions">
+                    <button class="button button-secondary" type="button" data-action="bulk-mark-touched">Mark touched</button>
+                    <button class="button button-secondary" type="button" data-action="bulk-archive">Archive</button>
+                    <button class="button button-secondary" type="button" data-action="bulk-restore">Restore</button>
+                    <button class="button button-secondary" type="button" data-action="clear-selection">Clear</button>
+                  </div>
+                </div>
+              `
+              : ''
+          }
 
           <label class="search-field">
             <span class="search-label">Search by name, notes, memory, tag, group, or socials</span>
@@ -473,11 +544,12 @@ function render({ preserveFocus = true } = {}) {
               ? `
                 <div class="record-list-shell" data-selection-shell>
                   <div class="selection-rail" data-selection-rail></div>
-                  <ul class="plain-list record-list ${state.settings.compact ? 'record-list--compact' : ''}">
+                  <ul class="plain-list record-list record-list--animated ${state.settings.compact ? 'record-list--compact' : ''}">
                     ${visibleRecords
                       .map((record) => {
                       const attention = getAttentionState(record, today)
                       const isSelected = activeSelectedId === record.id
+                      const isBulkSelected = state.selectedIds.includes(record.id)
                       const latestMemory = record.memories[0]
                       const nextTouch = getNextTouchDate(record)
                       return `
@@ -485,6 +557,9 @@ function render({ preserveFocus = true } = {}) {
                           <button class="record-card ${isSelected ? 'selected' : ''}" data-select="${record.id}">
                             <div class="record-top">
                               <div class="record-person">
+                                <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                                  <span></span>
+                                </span>
                                 ${buildRecordAvatar(record, 'small')}
                                 <div>
                                   <p class="record-tier">${tierMeta[record.tier].label}</p>
@@ -564,7 +639,7 @@ function render({ preserveFocus = true } = {}) {
       </main>
     </div>
 
-    ${buildSettingsPanel()}
+    ${buildSettingsPanel(duplicateGroups)}
     ${buildProfilePanel(selectedRecord, today)}
     <input id="memory-import-input" type="file" accept=".json,application/json" hidden />
     <input id="csv-import-input" type="file" accept=".csv,text/csv" hidden />
@@ -592,7 +667,7 @@ function buildInspector(record, today) {
 
   return `
     <div class="inspector-overview">
-      <article class="identity-hero">
+      <article class="identity-hero" data-drop-zone="avatar">
         <div class="identity-hero__main">
           ${buildRecordAvatar(record, 'large')}
           <div>
@@ -1034,7 +1109,18 @@ function buildProfilePanel(record, today) {
           <button class="settings-close" data-action="close-profile" aria-label="Close full profile">Close</button>
         </div>
 
-        <div class="profile-hero">
+        <div class="profile-actions">
+          <button class="button button-secondary" type="button" data-action="toggle-profile-edit">
+            ${state.profileEditOpen ? 'Done editing' : 'Edit person'}
+          </button>
+          <button class="button button-secondary" type="button" data-action="focus-memory">Add memory</button>
+          <button class="button button-secondary" type="button" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
+            ${record.archived ? 'Restore' : 'Archive'}
+          </button>
+          <button class="button button-danger" type="button" data-action="delete-person">Delete</button>
+        </div>
+
+        <div class="profile-hero" data-drop-zone="avatar">
           ${buildRecordAvatar(record, 'hero')}
           <div class="profile-hero__copy">
             <p>${tierMeta[record.tier].label} · Added ${formatLongDate(record.createdAt)}</p>
@@ -1052,6 +1138,53 @@ function buildProfilePanel(record, today) {
         </div>
 
         <div class="profile-grid">
+          ${
+            state.profileEditOpen
+              ? `
+                <section class="profile-card profile-card--wide">
+                  <p class="eyebrow">Edit</p>
+                  <div class="form-grid">
+                    <label>
+                      <span>Name</span>
+                      <input data-record-field="name" type="text" value="${escapeAttribute(record.name)}" />
+                    </label>
+                    <label>
+                      <span>Tier</span>
+                      <select data-record-field="tier">
+                        ${tierOrder.map((tier) => `<option value="${tier}" ${record.tier === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
+                      </select>
+                    </label>
+                    <label>
+                      <span>City</span>
+                      <input data-record-field="city" type="text" value="${escapeAttribute(record.city)}" />
+                    </label>
+                    <label>
+                      <span>Touch style</span>
+                      <select data-record-field="touchStyle">
+                        ${touchStyles.map((style) => `<option value="${style}" ${record.touchStyle === style ? 'selected' : ''}>${style}</option>`).join('')}
+                      </select>
+                    </label>
+                    <label class="wide">
+                      <span>Groups</span>
+                      <input data-record-field="groupsText" data-profile-groups type="text" value="${escapeAttribute(record.groups.join(', '))}" placeholder="founders, dubai, family" />
+                    </label>
+                    <label class="wide">
+                      <span>Tags</span>
+                      <input data-record-field="tagsText" data-profile-tags type="text" value="${escapeAttribute(record.tags.join(', '))}" placeholder="local, creative, travel" />
+                    </label>
+                    <label class="wide">
+                      <span>Focus</span>
+                      <input data-record-field="focus" type="text" value="${escapeAttribute(record.focus)}" />
+                    </label>
+                    <label class="wide">
+                      <span>Notes</span>
+                      <textarea data-record-field="notes">${escapeHtml(record.notes)}</textarea>
+                    </label>
+                  </div>
+                </section>
+              `
+              : ''
+          }
           <section class="profile-card">
             <p class="eyebrow">Contact card</p>
             <div class="profile-contact-list">
@@ -1108,7 +1241,7 @@ function buildInspectorPanel(selectedRecord, today) {
   `
 }
 
-function buildSettingsPanel() {
+function buildSettingsPanel(duplicateGroups = []) {
   return `
     <div class="settings-overlay ${state.settingsOpen ? 'open' : ''}" data-overlay="settings">
       <aside class="settings-panel" role="dialog" aria-modal="true" aria-label="Settings panel">
@@ -1140,7 +1273,7 @@ function buildSettingsPanel() {
         </div>
 
         <div class="settings-body">
-          ${buildSettingsTabContent()}
+          ${buildSettingsTabContent(duplicateGroups)}
         </div>
 
         <div class="settings-footer settings-footer--panel">
@@ -1153,14 +1286,14 @@ function buildSettingsPanel() {
   `
 }
 
-function buildSettingsTabContent() {
+function buildSettingsTabContent(duplicateGroups = []) {
   switch (state.settingsTab) {
     case 'defaults':
       return buildDefaultsTab()
     case 'shortcuts':
       return buildShortcutsTab()
     case 'data':
-      return buildDataTab()
+      return buildDataTab(duplicateGroups)
     case 'general':
     default:
       return buildGeneralTab()
@@ -1385,7 +1518,7 @@ function buildShortcutsTab() {
   `
 }
 
-function buildDataTab() {
+function buildDataTab(duplicateGroups = []) {
   return `
     <section class="settings-card settings-group">
       <p class="eyebrow">Migration</p>
@@ -1395,6 +1528,9 @@ function buildDataTab() {
       </div>
       <div class="settings-actions-grid">
         <button class="button button-secondary" data-action="import-csv" type="button">Import CSV</button>
+      </div>
+      <div class="drop-zone" data-drop-zone="csv">
+        Drop a CSV here to import contacts from Mesh, Clay, Google Contacts, or another CRM.
       </div>
     </section>
 
@@ -1419,6 +1555,48 @@ function buildDataTab() {
     </section>
 
     <section class="settings-card settings-group">
+      <p class="eyebrow">Duplicates</p>
+      <div class="settings-row">
+        <strong>Find and merge duplicate people</strong>
+        <small>Roster groups likely duplicates by matching normalized name, email, or phone. Review each cluster before merging.</small>
+      </div>
+      ${
+        duplicateGroups.length
+          ? `
+            <div class="duplicate-list">
+              ${duplicateGroups
+                .map(
+                  (group, index) => `
+                    <div class="duplicate-card">
+                      <div class="duplicate-card__head">
+                        <strong>Possible duplicate set ${index + 1}</strong>
+                        <span class="settings-pill">${group.length} records</span>
+                      </div>
+                      <div class="profile-token-row">
+                        ${group
+                          .map(
+                            (record) => `
+                              <button class="tag tag-chip" type="button" data-select="${record.id}">
+                                ${escapeHtml(record.name)}
+                              </button>
+                            `,
+                          )
+                          .join('')}
+                      </div>
+                      <button class="button button-secondary" type="button" data-action="merge-duplicates" data-duplicate-ids="${escapeAttribute(group.map((record) => record.id).join(','))}">
+                        Merge this set
+                      </button>
+                    </div>
+                  `,
+                )
+                .join('')}
+            </div>
+          `
+          : '<div class="empty-copy">No likely duplicates detected right now.</div>'
+      }
+    </section>
+
+    <section class="settings-card settings-group">
       <p class="eyebrow">Roster</p>
       <div class="settings-row">
         <strong>Reset to your seeded roster</strong>
@@ -1434,6 +1612,14 @@ function buildDataTab() {
       <div class="settings-row">
         <strong>Running Roster v${APP_VERSION}</strong>
         <small>The current desktop build includes custom groups, contact cards, profile photos, relation links, archive mode, compact mode, motion polish, and import/export tools.</small>
+      </div>
+    </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Next platform</p>
+      <div class="settings-row">
+        <strong>Companion ideas</strong>
+        <small>Next up after this release: iPhone companion capture and native Mac menu bar reminders.</small>
       </div>
     </section>
   `
@@ -1558,10 +1744,16 @@ function handleClick(event) {
         return
       case 'open-profile':
         state.profileOpen = true
+        state.profileEditOpen = false
         render({ preserveFocus: false })
         return
       case 'close-profile':
         state.profileOpen = false
+        state.profileEditOpen = false
+        render({ preserveFocus: false })
+        return
+      case 'toggle-profile-edit':
+        state.profileEditOpen = !state.profileEditOpen
         render({ preserveFocus: false })
         return
       case 'upload-avatar':
@@ -1589,6 +1781,25 @@ function handleClick(event) {
         state.settings.defaults = { ...defaultContactSettings }
         persistSettings()
         render({ preserveFocus: false })
+        return
+      case 'delete-person':
+        removeSelectedRecord()
+        return
+      case 'bulk-mark-touched':
+        runBulkAction('touch')
+        return
+      case 'bulk-archive':
+        runBulkAction('archive')
+        return
+      case 'bulk-restore':
+        runBulkAction('restore')
+        return
+      case 'clear-selection':
+        state.selectedIds = []
+        render({ preserveFocus: false })
+        return
+      case 'merge-duplicates':
+        mergeDuplicateGroup(String(action.dataset.duplicateIds || '').split(',').filter(Boolean))
         return
       default:
         break
@@ -1634,6 +1845,12 @@ function handleClick(event) {
   const addRelatedButton = target.closest('[data-add-related]')
   if (addRelatedButton instanceof HTMLElement) {
     addRelatedPersonToSelectedRecord(addRelatedButton.dataset.addRelated)
+    return
+  }
+
+  const toggleSelectButton = target.closest('[data-toggle-select]')
+  if (toggleSelectButton instanceof HTMLElement) {
+    toggleBulkSelection(toggleSelectButton.dataset.toggleSelect)
     return
   }
 
@@ -1734,12 +1951,17 @@ function handleInput(event) {
 
   const uiFilter = target.dataset.uiFilter
   if (uiFilter) {
-    if (uiFilter === 'group') {
+    if (uiFilter === 'tier') {
+      setFilter(target.value || 'all')
+      return
+    } else if (uiFilter === 'group') {
       state.groupFilter = target.value
     } else if (uiFilter === 'tag') {
       state.tagFilter = target.value
     } else if (uiFilter === 'sort') {
       state.sortMode = target.value || 'attention'
+    } else if (uiFilter === 'direction') {
+      state.sortDirection = target.value || 'desc'
     }
     render({ preserveFocus: false })
     return
@@ -1747,6 +1969,16 @@ function handleInput(event) {
 
   const recordField = target.dataset.recordField
   if (recordField) {
+    if (target.hasAttribute('data-profile-groups')) {
+      updateSelectedRecord('groups', String(target.value).split(',').map((group) => normalizeGroup(group)).filter(Boolean), { render: event.type === 'change' })
+      return
+    }
+
+    if (target.hasAttribute('data-profile-tags')) {
+      updateSelectedRecord('tags', String(target.value).split(',').map((tag) => normalizeTag(tag)).filter(Boolean), { render: event.type === 'change' })
+      return
+    }
+
     const shouldRender =
       event.type === 'change' ||
       target instanceof HTMLSelectElement ||
@@ -2092,6 +2324,47 @@ function addPerson() {
   focusByKey('record-name')
 }
 
+function toggleBulkSelection(id) {
+  if (!id) {
+    return
+  }
+
+  state.selectedIds = state.selectedIds.includes(id)
+    ? state.selectedIds.filter((entry) => entry !== id)
+    : [...state.selectedIds, id]
+
+  render({ preserveFocus: false })
+}
+
+function runBulkAction(action) {
+  if (!state.selectedIds.length) {
+    return
+  }
+
+  state.records = state.records.map((record) => {
+    if (!state.selectedIds.includes(record.id)) {
+      return record
+    }
+
+    if (action === 'touch') {
+      return { ...record, lastContact: todayStamp() }
+    }
+
+    if (action === 'archive') {
+      return { ...record, archived: true }
+    }
+
+    if (action === 'restore') {
+      return { ...record, archived: false }
+    }
+
+    return record
+  })
+
+  persistRecords()
+  render({ preserveFocus: false })
+}
+
 function removeSelectedRecord() {
   const record = getSelectedRecord()
   if (!record) {
@@ -2103,6 +2376,7 @@ function removeSelectedRecord() {
   }
 
   state.records = state.records.filter((entry) => entry.id !== record.id)
+  state.selectedIds = state.selectedIds.filter((entry) => entry !== record.id)
   state.selectedId = state.records[0] ? state.records[0].id : null
   clearDraftsForRecord(record.id)
   restoreDraftsForSelected(state.selectedId)
@@ -2210,6 +2484,11 @@ async function importCsvFile(file) {
     state.selectedId = state.records[0] ? state.records[0].id : null
     persistRecords()
     restoreDraftsForSelected(state.selectedId)
+    const duplicateGroups = getDuplicateGroups(state.records)
+    if (duplicateGroups.length) {
+      state.settingsOpen = true
+      state.settingsTab = 'data'
+    }
     render({ preserveFocus: false })
   } catch (error) {
     window.alert(`CSV import failed.\n\n${error instanceof Error ? error.message : String(error)}`)
@@ -2571,20 +2850,26 @@ function getVisibleRecords(records, query, filter, today) {
 }
 
 function compareRecords(first, second, today) {
+  const direction = state.sortDirection === 'asc' ? 1 : -1
+
   if (state.sortMode === 'name') {
-    return first.name.localeCompare(second.name)
+    return first.name.localeCompare(second.name) * direction
+  }
+
+  if (state.sortMode === 'created') {
+    return first.createdAt.localeCompare(second.createdAt) * direction
   }
 
   if (state.sortMode === 'group') {
     const firstGroup = first.groups[0] || 'zzz'
     const secondGroup = second.groups[0] || 'zzz'
-    return firstGroup.localeCompare(secondGroup) || first.name.localeCompare(second.name)
+    return (firstGroup.localeCompare(secondGroup) || first.name.localeCompare(second.name)) * direction
   }
 
   if (state.sortMode === 'tag') {
     const firstTag = first.tags[0] || 'zzz'
     const secondTag = second.tags[0] || 'zzz'
-    return firstTag.localeCompare(secondTag) || first.name.localeCompare(second.name)
+    return (firstTag.localeCompare(secondTag) || first.name.localeCompare(second.name)) * direction
   }
 
   const firstAttention = getAttentionState(first, today)
@@ -2902,58 +3187,17 @@ function metricCard(label, value, tone, detail = '') {
 function buildAnimatedValue(value, key, options = {}) {
   const { tag = 'span', className = '' } = options
   const display = String(value)
-  const match = display.match(/^([^0-9-]*)(-?\d+)(.*)$/)
-
-  if (!match) {
-    return `<${tag} class="${className}">${escapeHtml(display)}</${tag}>`
-  }
-
   const previousDisplay = animatedValueHistory.get(key) || display
   animatedValueHistory.set(key, display)
-
-  const previousMatch = previousDisplay.match(/^([^0-9-]*)(-?\d+)(.*)$/)
-  const prefix = match[1]
-  const digits = match[2]
-  const suffix = match[3]
-  const previousDigits = previousMatch ? previousMatch[2] : digits
-  const digitLength = Math.max(previousDigits.length, digits.length)
-  const fromChars = previousDigits.padStart(digitLength, ' ').split('')
-  const toChars = digits.padStart(digitLength, ' ').split('')
+  const stableClass = previousDisplay === display ? 'is-static' : ''
 
   return `
-    <${tag} class="animated-value ${className}" aria-label="${escapeAttribute(display)}">
-      ${prefix ? `<span class="animated-value__affix">${escapeHtml(prefix)}</span>` : ''}
-      ${toChars
-        .map((character, index) => buildAnimatedDigit(fromChars[index], character, index))
-        .join('')}
-      ${suffix ? `<span class="animated-value__affix">${escapeHtml(suffix)}</span>` : ''}
-    </${tag}>
-  `
-}
-
-function buildAnimatedDigit(fromCharacter, toCharacter, index) {
-  if (toCharacter === ' ') {
-    return '<span class="digit-static">&nbsp;</span>'
-  }
-
-  if (!/\d/.test(toCharacter)) {
-    return `<span class="digit-static">${escapeHtml(toCharacter)}</span>`
-  }
-
-  const fromDigit = /\d/.test(fromCharacter) ? Number(fromCharacter) : Number(toCharacter)
-  const toDigit = Number(toCharacter)
-  const targetDigit = toDigit < fromDigit ? toDigit + 10 : toDigit
-  const stack = Array.from({ length: 20 }, (_, digitIndex) => `<span>${digitIndex % 10}</span>`).join('')
-
-  return `
-    <span class="digit-viewport" aria-hidden="true">
-      <span
-        class="digit-stack ${fromDigit === targetDigit ? 'is-static' : ''}"
-        style="--digit-from:${fromDigit};--digit-to:${targetDigit};--digit-delay:${index * 34}ms"
-      >
-        ${stack}
+    <${tag} class="animated-value ${className} ${stableClass}" aria-label="${escapeAttribute(display)}">
+      <span class="animated-value__stack">
+        <span>${escapeHtml(previousDisplay)}</span>
+        <span>${escapeHtml(display)}</span>
       </span>
-    </span>
+    </${tag}>
   `
 }
 
@@ -3031,6 +3275,49 @@ function formatReconnectTiming(daysUntil) {
 
 function todayStamp() {
   return formatStamp(new Date())
+}
+
+function getBirthdayState(record, today) {
+  const birthday = String(record.contact?.birthday || '')
+  if (!isValidStamp(birthday)) {
+    return null
+  }
+
+  const [, month, day] = birthday.split('-')
+  const [currentYear] = today.split('-')
+  let nextBirthday = `${currentYear}-${month}-${day}`
+  if (nextBirthday < today) {
+    nextBirthday = `${Number(currentYear) + 1}-${month}-${day}`
+  }
+  const daysUntil = differenceInDays(today, nextBirthday)
+  return {
+    daysUntil,
+    date: nextBirthday,
+  }
+}
+
+function getTodayReviewRecords(records, today) {
+  return records
+    .map((record) => {
+      const attention = getAttentionState(record, today)
+      const birthday = getBirthdayState(record, today)
+
+      if (attention.daysUntil <= 0) {
+        return { record, rank: 0, reason: 'Reconnect now' }
+      }
+
+      if (birthday && birthday.daysUntil <= 14) {
+        return { record, rank: 1, reason: birthday.daysUntil === 0 ? 'Birthday today' : `Birthday in ${birthday.daysUntil}d` }
+      }
+
+      if (attention.daysUntil <= 7) {
+        return { record, rank: 2, reason: `Due in ${attention.daysUntil}d` }
+      }
+
+      return null
+    })
+    .filter(Boolean)
+    .sort((first, second) => first.rank - second.rank || compareRecords(first.record, second.record, today))
 }
 
 function makeId() {
@@ -3476,6 +3763,76 @@ function mergeRecordData(currentRecord, importedRecord) {
     memories,
   }
 }
+
+function getDuplicateGroups(records) {
+  const buckets = new Map()
+
+  for (const record of records) {
+    const keys = [
+      `name:${normalizePersonKey(record.name)}`,
+      record.contact?.email ? `email:${String(record.contact.email).trim().toLowerCase()}` : '',
+      record.contact?.phone ? `phone:${String(record.contact.phone).replace(/\D+/g, '')}` : '',
+    ].filter(Boolean)
+
+    for (const key of keys) {
+      const bucket = buckets.get(key) || []
+      bucket.push(record)
+      buckets.set(key, bucket)
+    }
+  }
+
+  const groups = []
+  const seen = new Set()
+
+  for (const bucket of buckets.values()) {
+    const unique = Array.from(new Map(bucket.map((record) => [record.id, record])).values())
+    if (unique.length < 2) {
+      continue
+    }
+    const signature = unique.map((record) => record.id).sort().join('|')
+    if (seen.has(signature)) {
+      continue
+    }
+    seen.add(signature)
+    groups.push(unique)
+  }
+
+  return groups.sort((first, second) => first[0].name.localeCompare(second[0].name))
+}
+
+function mergeDuplicateGroup(ids) {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)))
+  if (uniqueIds.length < 2) {
+    return
+  }
+
+  const records = uniqueIds.map((id) => state.records.find((record) => record.id === id)).filter(Boolean)
+  if (records.length < 2) {
+    return
+  }
+
+  const [base, ...rest] = records
+  const merged = rest.reduce((current, record) => mergeRecordData(current, record), base)
+
+  if (!window.confirm(`Merge ${records.length} possible duplicates into ${base.name}?`)) {
+    return
+  }
+
+  state.records = state.records
+    .filter((record) => !uniqueIds.includes(record.id) || record.id === base.id)
+    .map((record) => (record.id === base.id ? merged : record))
+
+  for (const id of uniqueIds.slice(1)) {
+    clearDraftsForRecord(id)
+  }
+
+  state.selectedId = merged.id
+  state.selectedIds = state.selectedIds.filter((id) => !uniqueIds.slice(1).includes(id))
+  restoreDraftsForSelected(state.selectedId)
+  persistRecords()
+  render({ preserveFocus: false })
+}
+
 function normalizePersonKey(value) {
   return String(value || '')
     .toLowerCase()
@@ -3673,6 +4030,50 @@ function animateCompactToggle() {
   }, 280)
 }
 
+function handleDragOver(event) {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  const zone = target.closest('[data-drop-zone]')
+  if (!zone) {
+    return
+  }
+
+  event.preventDefault()
+  zone.classList.add('is-drag-over')
+}
+
+function handleDrop(event) {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  const zone = target.closest('[data-drop-zone]')
+  if (!(zone instanceof HTMLElement)) {
+    return
+  }
+
+  event.preventDefault()
+  zone.classList.remove('is-drag-over')
+  const file = event.dataTransfer?.files?.[0]
+  if (!file) {
+    return
+  }
+
+  if (zone.dataset.dropZone === 'csv') {
+    importCsvFile(file)
+    return
+  }
+
+  if (zone.dataset.dropZone === 'avatar') {
+    state.pendingAvatarId = state.selectedId
+    importAvatarFile(file)
+  }
+}
+
 function openAvatarPicker() {
   state.pendingAvatarId = state.selectedId
   const input = document.querySelector('#avatar-input')
@@ -3725,7 +4126,7 @@ function readImageAsDataUrl(file) {
           return
         }
         context.drawImage(image, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', 0.9))
+        resolve(canvas.toDataURL('image/png'))
       }
       image.src = String(reader.result)
     }

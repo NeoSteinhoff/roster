@@ -57,4 +57,4 @@ The JSON memory file is designed to stay readable and editable by humans.
 
 ## Current version
 
-`v0.6.0`
+`v0.7.0`

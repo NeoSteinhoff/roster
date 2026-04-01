@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.7.0
+- Replaced the broken digit animation with cleaner rolling value transitions.
+- Added full-profile editing, archive, and delete actions directly in the fullscreen profile.
+- Added tier and direction sorting controls for a more unified Mesh-style toolbar.
+- Added bulk selection and mass actions for touched, archive, and restore.
+- Added duplicate detection and merge tools in settings, plus auto-surface after CSV imports.
+- Added one-click Today review queue with birthday and reconnect reminders.
+- Added drag-and-drop CSV import and avatar upload.
+- Rebuilt the logo assets as transparent mark-only icons and prepared the desktop app rebuild.
+
 ## v0.6.0
 - Added the motion pass across Roster.
 - Added animated count rolls for summary tiles, filters, and tier counts.
