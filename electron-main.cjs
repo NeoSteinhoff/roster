@@ -19,7 +19,7 @@ function createWindow() {
   })
 
   nativeTheme.themeSource = 'dark'
-  window.loadFile(path.join(__dirname, 'index.html'))
+  window.loadFile(path.join(__dirname, 'app.html'))
 }
 
 app.whenReady().then(() => {

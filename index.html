@@ -3,53 +3,131 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0b0f16" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <title>Roster</title>
-    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401e" />
-    <link rel="manifest" href="./manifest.webmanifest?v=20260401e" />
-    <link rel="apple-touch-icon" href="./assets/icon.iconset/icon_512x512.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260401e" />
-    <script>
-      const renderBootMessage = (message) => {
-        const root = document.getElementById('app')
-        if (!root) return
-        root.innerHTML = `
-          <div style="max-width:760px;margin:48px auto;padding:28px;border:1px solid rgba(255,255,255,.08);border-radius:24px;background:rgba(10,12,17,.92);box-shadow:0 24px 60px rgba(0,0,0,.35);font:16px/1.6 Avenir Next,Segoe UI,sans-serif;color:#f4efe8">
-            <strong style="display:block;margin-bottom:12px;font-size:22px">Roster</strong>
-            <div style="color:#bfb4a8">${message}</div>
-          </div>
-        `
-      }
-
-      window.addEventListener('error', (event) => {
-        renderBootMessage(`The app hit an error while loading: ${event.message}`)
-      })
-
-      window.addEventListener('unhandledrejection', (event) => {
-        const reason = event.reason && event.reason.message ? event.reason.message : String(event.reason)
-        renderBootMessage(`The app failed while starting: ${reason}`)
-      })
-
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js?v=20260401e').catch(() => {})
-        })
-      }
-    </script>
+    <meta name="theme-color" content="#080b12" />
+    <meta name="description" content="Roster is the personal relationship operating system for remembering people, follow-ups, context, and meeting prep." />
+    <title>Roster | The friend CRM</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401f" />
+    <link rel="stylesheet" href="./site.css?v=20260401f" />
   </head>
-  <body data-theme="mesh">
-    <div id="app">
-      <div style="max-width:760px;margin:48px auto;padding:28px;border:1px solid rgba(255,255,255,.08);border-radius:24px;background:rgba(10,12,17,.92);box-shadow:0 24px 60px rgba(0,0,0,.35);font:16px/1.6 Avenir Next,Segoe UI,sans-serif;color:#f4efe8">
-        <strong style="display:block;margin-bottom:12px;font-size:22px">Roster</strong>
-        <div style="color:#bfb4a8">Loading your dark relationship dashboard...</div>
-      </div>
+  <body>
+    <div class="site-shell">
+      <header class="site-nav">
+        <a class="brand" href="./index.html">
+          <img src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
+          <span>
+            <strong>Roster</strong>
+            <small>The friend CRM</small>
+          </span>
+        </a>
+        <nav class="site-nav__links">
+          <a href="./pricing.html">Pricing</a>
+          <a href="./app.html">Open app</a>
+          <a class="button button-secondary" href="./pricing.html">Get Roster</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Personal relationship operating system</p>
+            <h1>Remember people like they matter.</h1>
+            <p class="hero-copy__body">
+              Roster keeps context, follow-ups, memories, and meeting prep in one calm workspace so the people you care about never collapse into scattered notes.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="./pricing.html">See pricing</a>
+              <a class="button button-secondary" href="./app.html">Launch the app</a>
+            </div>
+            <div class="hero-proof">
+              <span>Local-first</span>
+              <span>Desktop-ready</span>
+              <span>Import from other CRMs</span>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-surface hero-surface--main">
+              <p class="eyebrow">Meeting brief</p>
+              <h2>Walk into every catch-up with context.</h2>
+              <ul>
+                <li>Who they are and what tier they belong in</li>
+                <li>What is alive right now in their world</li>
+                <li>Recent memories, tags, groups, and follow-up rhythm</li>
+              </ul>
+            </div>
+            <div class="hero-surface hero-surface--stack">
+              <strong>Today queue</strong>
+              <small>Birthdays, reconnect nudges, and people worth touching this week.</small>
+            </div>
+            <div class="hero-surface hero-surface--stack tone-accent">
+              <strong>Import in minutes</strong>
+              <small>CSV mapping, duplicate merge, and readable exports for a clean move from your current system.</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="feature-ribbon">
+          <article>
+            <p class="eyebrow">Memory</p>
+            <h3>Attach meaning to every relationship.</h3>
+            <p>Save notes, memories, tags, groups, and contact context without the clunky feeling of a sales CRM.</p>
+          </article>
+          <article>
+            <p class="eyebrow">Timing</p>
+            <h3>Know who needs attention next.</h3>
+            <p>Cadence, reminders, today queue, and touch styles work together so relationships stay warm instead of drifting.</p>
+          </article>
+          <article>
+            <p class="eyebrow">Prep</p>
+            <h3>Show up informed.</h3>
+            <p>Meeting Brief mode gives you the fastest version of what matters before you see someone.</p>
+          </article>
+        </section>
+
+        <section class="story-grid">
+          <div class="story-block">
+            <p class="eyebrow">Built for</p>
+            <h2>Founders, operators, creators, recruiters, investors, and anyone who hates forgetting important context.</h2>
+          </div>
+          <div class="story-block story-block--muted">
+            <p>
+              Roster is for people who meet a lot of people, care about doing relationships thoughtfully, and want something more beautiful and personal than a spreadsheet or a pipeline tool.
+            </p>
+          </div>
+        </section>
+
+        <section class="comparison">
+          <div class="comparison__copy">
+            <p class="eyebrow">Why Roster</p>
+            <h2>More personal than a CRM. More useful than a contacts list.</h2>
+          </div>
+          <div class="comparison__list">
+            <div>
+              <strong>Local-first foundation</strong>
+              <p>Your memory system starts useful immediately without needing a whole ops stack first.</p>
+            </div>
+            <div>
+              <strong>Calm premium interface</strong>
+              <p>Dark, focused, and designed to feel like a product you want open every day.</p>
+            </div>
+            <div>
+              <strong>Switching support</strong>
+              <p>CSV import, duplicate cleanup, archive flows, and readable export keep you in control.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="final-cta">
+          <div>
+            <p class="eyebrow">Ready to sell</p>
+            <h2>Start with the pricing page and Stripe-hosted checkout.</h2>
+          </div>
+          <div class="final-cta__actions">
+            <a class="button button-primary" href="./pricing.html">Open pricing</a>
+            <a class="button button-secondary" href="./app.html">Try the app</a>
+          </div>
+        </section>
+      </main>
     </div>
-    <script type="module" src="./app.js?v=20260401e"></script>
   </body>
-  </html>
+</html>

@@ -2,7 +2,7 @@ const RECORDS_KEY = 'friends-circle-crm.static.v4'
 const SETTINGS_KEY = 'friends-circle-crm.settings.v1'
 const DRAFTS_KEY = 'friends-circle-crm.drafts.v1'
 const REMINDER_LOG_KEY = 'friends-circle-crm.reminders.v1'
-const APP_VERSION = '0.9.0'
+const APP_VERSION = '0.9.1'
 const PROFILE_CLOSE_MS = 220
 
 const tierOrder = ['inner-circle', 'close', 'medium', 'acquaintance']
@@ -281,7 +281,7 @@ function render({ preserveFocus = true } = {}) {
       <header class="hero">
         <div class="hero-copy">
           <div class="brand-lockup">
-            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401e" alt="Roster logo" />
+            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
             <div class="brand-lockup__text">
               <p class="eyebrow">Roster</p>
               <small>The friend CRM</small>

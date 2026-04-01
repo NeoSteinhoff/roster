@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.1
+- Split the product into a public marketing site, dedicated pricing page, and separate desktop/web app entrypoint.
+- Added Stripe-ready hosted billing configuration for monthly and yearly Pro checkout links plus optional billing portal support.
+- Updated Electron to open the app directly while the web root now serves the sales experience.
+- Added release documentation and reusable scripts for publishing and artifact cleanup.
+
 ## v0.9.0
 - Added native local reminder controls with desktop notification digests, birthday lead-time, and this-week prep nudges.
 - Added smarter CSV import review with inferred field mapping before records are merged into the roster.

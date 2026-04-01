@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080b12" />
+    <meta name="description" content="Roster pricing for the friend CRM: local-first free plan, Pro monthly, and Pro yearly via Stripe-hosted checkout." />
+    <title>Roster Pricing</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401f" />
+    <link rel="stylesheet" href="./site.css?v=20260401f" />
+  </head>
+  <body data-page="pricing">
+    <div class="site-shell">
+      <header class="site-nav">
+        <a class="brand" href="./index.html">
+          <img src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
+          <span>
+            <strong>Roster</strong>
+            <small>The friend CRM</small>
+          </span>
+        </a>
+        <nav class="site-nav__links">
+          <a href="./index.html">Overview</a>
+          <a href="./app.html">Open app</a>
+          <a class="button button-secondary" data-portal-link href="#">Manage billing</a>
+        </nav>
+      </header>
+
+      <main class="pricing-page">
+        <section class="pricing-hero">
+          <div>
+            <p class="eyebrow">Pricing</p>
+            <h1>Simple plans, Stripe-hosted checkout, and a clear upgrade path.</h1>
+            <p class="hero-copy__body">
+              Start local-first for free, then unlock the paid workflow when you are ready to turn Roster into the relationship OS you actually rely on every week.
+            </p>
+          </div>
+          <label class="billing-toggle">
+            <span>Monthly</span>
+            <input type="checkbox" data-billing-toggle />
+            <span>Yearly</span>
+          </label>
+          <p class="pricing-savings" data-yearly-savings>Switch to annual to save</p>
+        </section>
+
+        <section class="pricing-grid">
+          <article class="pricing-card" data-plan-key="free">
+            <p class="eyebrow">Free</p>
+            <h2><span data-plan-price>$0</span> <small data-plan-cadence>forever</small></h2>
+            <p class="pricing-card__meta" data-plan-meta>Local-first workspace for one device.</p>
+            <ul>
+              <li>Track tiers, groups, tags, and memories</li>
+              <li>Import and export readable relationship data</li>
+              <li>Archive, meeting brief, quick capture, and local queues</li>
+            </ul>
+            <a class="button button-secondary" data-plan-action="free" href="./app.html">Open the app</a>
+          </article>
+
+          <article class="pricing-card pricing-card--featured" data-plan-key="proMonthly">
+            <p class="eyebrow">Pro</p>
+            <h2><span data-plan-price>$9</span> <small data-plan-cadence>per month</small></h2>
+            <p class="pricing-card__meta" data-plan-meta>Monthly plan billed through Stripe Checkout.</p>
+            <ul>
+              <li>Hosted billing through Stripe</li>
+              <li>Priority onboarding and future sync eligibility</li>
+              <li>Best fit for founders, creators, recruiters, and operators</li>
+            </ul>
+            <a class="button button-primary" data-plan-action="proMonthly" href="#">Start Pro</a>
+          </article>
+
+          <article class="pricing-card">
+            <p class="eyebrow">Teams later</p>
+            <h2>Custom</h2>
+            <p class="pricing-card__meta">For shared circles, team notes, and more structured relationship ops once the solo product is mature.</p>
+            <ul>
+              <li>Not the launch priority</li>
+              <li>Waitlist for shared workspaces</li>
+              <li>Best for agencies, funds, and recruiting teams</li>
+            </ul>
+            <a class="button button-secondary" href="mailto:hello@roster.so?subject=Roster%20teams%20waitlist">Join waitlist</a>
+          </article>
+        </section>
+
+        <section class="pricing-footnote">
+          <div>
+            <p class="eyebrow">Stripe billing setup</p>
+            <h3>Drop in your Stripe payment links and you are live.</h3>
+          </div>
+          <p>
+            The pricing buttons are wired for Stripe-hosted checkout links in
+            <code>billing-config.js</code>. Add your real monthly plan link, yearly plan link, and optional billing portal URL.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script src="./billing-config.js?v=20260401f"></script>
+    <script src="./site.js?v=20260401f"></script>
+  </body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0f16" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Roster App</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401f" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260401f" />
+    <link rel="apple-touch-icon" href="./assets/icon.iconset/icon_512x512.png" />
+    <link rel="stylesheet" href="./styles.css?v=20260401f" />
+    <script>
+      const renderBootMessage = (message) => {
+        const root = document.getElementById('app')
+        if (!root) return
+        root.innerHTML = `
+          <div style="max-width:760px;margin:48px auto;padding:28px;border:1px solid rgba(255,255,255,.08);border-radius:24px;background:rgba(10,12,17,.92);box-shadow:0 24px 60px rgba(0,0,0,.35);font:16px/1.6 Avenir Next,Segoe UI,sans-serif;color:#f4efe8">
+            <strong style="display:block;margin-bottom:12px;font-size:22px">Roster</strong>
+            <div style="color:#bfb4a8">${message}</div>
+          </div>
+        `
+      }
+
+      window.addEventListener('error', (event) => {
+        renderBootMessage(`The app hit an error while loading: ${event.message}`)
+      })
+
+      window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason && event.reason.message ? event.reason.message : String(event.reason)
+        renderBootMessage(`The app failed while starting: ${reason}`)
+      })
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js?v=20260401f').catch(() => {})
+        })
+      }
+    </script>
+  </head>
+  <body data-theme="mesh">
+    <div id="app">
+      <div style="max-width:760px;margin:48px auto;padding:28px;border:1px solid rgba(255,255,255,.08);border-radius:24px;background:rgba(10,12,17,.92);box-shadow:0 24px 60px rgba(0,0,0,.35);font:16px/1.6 Avenir Next,Segoe UI,sans-serif;color:#f4efe8">
+        <strong style="display:block;margin-bottom:12px;font-size:22px">Roster</strong>
+        <div style="color:#bfb4a8">Loading your dark relationship dashboard...</div>
+      </div>
+    </div>
+    <script type="module" src="./app.js?v=20260401f"></script>
+  </body>
+</html>

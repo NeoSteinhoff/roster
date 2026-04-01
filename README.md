@@ -14,6 +14,8 @@ It includes:
 - compact and full views
 - full profile view with contact card, socials, related people, and avatar support
 - keyboard shortcuts and motion-focused desktop UI
+- public marketing site and pricing page
+- Stripe-ready hosted billing links for Pro plans
 
 ## Run locally
 
@@ -23,14 +25,17 @@ npm install
 npm start
 ```
 
-For the static web version already being served locally:
+For the public website + pricing pages:
 
 ```bash
 cd /Users/neosteinhoff/Documents/roster
 python3 -m http.server 4173
 ```
 
-Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
+Then open:
+- [http://127.0.0.1:4173/](http://127.0.0.1:4173/) for the marketing site
+- [http://127.0.0.1:4173/pricing.html](http://127.0.0.1:4173/pricing.html) for pricing
+- [http://127.0.0.1:4173/app.html](http://127.0.0.1:4173/app.html) for the product app
 
 ## Package the Mac app
 
@@ -42,6 +47,24 @@ npm run package:mac
 The packaged app lands in:
 
 `/Users/neosteinhoff/Documents/roster/dist/Roster-darwin-arm64/Roster.app`
+
+## Stripe billing setup
+
+The pricing page uses Stripe-hosted checkout links from:
+
+`/Users/neosteinhoff/Documents/roster/billing-config.js`
+
+Update:
+- `proMonthly.href`
+- `proYearly.href`
+- `portalUrl`
+
+Recommended setup:
+- create a monthly Stripe subscription payment link
+- create a yearly Stripe subscription payment link
+- optionally create a Stripe customer portal link
+
+The site will automatically route pricing buttons to those hosted Stripe links.
 
 ## Data model
 
@@ -60,4 +83,4 @@ The JSON memory file is designed to stay readable and editable by humans.
 
 ## Current version
 
-`v0.9.0`
+`v0.9.1`
