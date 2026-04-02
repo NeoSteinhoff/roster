@@ -268,6 +268,10 @@ p {
   align-items: center;
 }
 
+.settings-footer--panel {
+  flex-shrink: 0;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -495,6 +499,10 @@ p {
   display: grid;
   grid-template-columns: 290px minmax(0, 1fr) 440px;
   min-height: 74svh;
+}
+
+.workspace--tab {
+  grid-template-columns: 290px minmax(0, 1fr);
 }
 
 .panel {
@@ -877,13 +885,14 @@ p {
 .tier-card__body {
   display: grid;
   gap: 14px;
-  padding: 0 18px 18px;
+  padding: 6px 18px 18px;
   color: var(--muted-strong);
 }
 
 .tier-card__people {
   display: grid;
   gap: 8px;
+  margin-top: 2px;
 }
 
 .tier-person {
@@ -1011,15 +1020,30 @@ p {
 .editor-form textarea,
 .memory-composer input,
 .memory-composer textarea,
+.contact-card input,
+.contact-card select,
+.contact-card textarea,
+.profile-card input,
+.profile-card select,
+.profile-card textarea,
+.quick-capture-panel input,
+.quick-capture-panel select,
+.quick-capture-panel textarea,
 .settings-control,
 .theme-select {
+  appearance: none;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(23, 27, 38, 0.92);
   color: var(--ink);
   padding: 0.94rem 1rem;
   font-size: 0.98rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 26px rgba(0, 0, 0, 0.16);
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease,
@@ -1031,14 +1055,22 @@ p {
   position: relative;
   z-index: 1;
   padding-right: 56px;
-  background: rgba(14, 18, 26, 0.88);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(14, 18, 26, 0.9);
 }
 
 .search-shell input::placeholder,
 .editor-form input::placeholder,
 .editor-form textarea::placeholder,
 .memory-composer input::placeholder,
-.memory-composer textarea::placeholder {
+.memory-composer textarea::placeholder,
+.contact-card input::placeholder,
+.contact-card textarea::placeholder,
+.profile-card input::placeholder,
+.profile-card textarea::placeholder,
+.quick-capture-panel input::placeholder,
+.quick-capture-panel textarea::placeholder {
   color: var(--muted);
 }
 
@@ -1061,12 +1093,23 @@ p {
 .editor-form textarea:focus,
 .memory-composer input:focus,
 .memory-composer textarea:focus,
+.contact-card input:focus,
+.contact-card select:focus,
+.contact-card textarea:focus,
+.profile-card input:focus,
+.profile-card select:focus,
+.profile-card textarea:focus,
+.quick-capture-panel input:focus,
+.quick-capture-panel select:focus,
+.quick-capture-panel textarea:focus,
 .settings-control:focus,
 .theme-select:focus {
   outline: none;
   border-color: rgba(245, 168, 104, 0.36);
   box-shadow: 0 0 0 4px rgba(245, 168, 104, 0.12);
-  background: rgba(255, 255, 255, 0.065);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.03)),
+    rgba(24, 28, 39, 0.96);
 }
 
 .record-list {
@@ -1378,6 +1421,7 @@ p {
 
 .editor-form label,
 .memory-composer label,
+.profile-card label,
 .settings-row {
   display: grid;
   gap: 8px;
@@ -1385,13 +1429,15 @@ p {
 
 .editor-form label span,
 .memory-composer label span,
+.profile-card label span,
 .settings-row strong {
   font-size: 0.92rem;
   font-weight: 700;
 }
 
 .editor-form .wide,
-.memory-composer .wide {
+.memory-composer .wide,
+.profile-card .wide {
   grid-column: 1 / -1;
 }
 
@@ -1399,6 +1445,12 @@ p {
 .memory-composer textarea {
   min-height: 132px;
   resize: vertical;
+}
+
+.editor-form select,
+.memory-composer input[type='date'],
+.editor-form input[type='date'] {
+  padding-right: 2.8rem;
 }
 
 .memory-section {
@@ -1421,8 +1473,17 @@ p {
   grid-column: 1 / -1;
 }
 
+.inspector-actions .button-archive {
+  grid-column: 1 / -1;
+}
+
 .memory-composer {
   padding: 18px;
+}
+
+.memory-composer .form-grid {
+  align-items: end;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
 }
 
 .memory-head {
@@ -1450,6 +1511,25 @@ p {
 
 .memory-card p {
   color: var(--ink-soft);
+}
+
+.memory-shortcut-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 56px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(23, 27, 38, 0.92);
+  color: var(--ink-soft);
+  padding: 0.94rem 1rem;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 26px rgba(0, 0, 0, 0.16);
 }
 
 .memory-delete,
@@ -1496,9 +1576,9 @@ p {
   bottom: 16px;
   width: min(520px, calc(100vw - 32px));
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 16px;
-  padding: 22px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 30px;
   background:
@@ -1507,6 +1587,7 @@ p {
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.46);
   transform: translate3d(0, 18px, 0) scale(0.985);
   opacity: 0;
+  overflow: hidden;
   will-change: transform, opacity;
 }
 
@@ -1525,21 +1606,43 @@ p {
 
 .settings-copy {
   display: grid;
-  gap: 10px;
-  max-width: 26rem;
+  gap: 8px;
+  max-width: 24rem;
 }
 
 .settings-copy h2 {
-  font-size: clamp(2.2rem, 4vw, 3.4rem);
-  line-height: 0.94;
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  line-height: 0.96;
 }
 
 .settings-body {
   display: grid;
   gap: 14px;
+  min-height: 0;
   overflow: auto;
-  padding-right: 6px;
+  padding-right: 10px;
+  padding-bottom: 8px;
   align-content: start;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.settings-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.settings-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 999px;
+}
+
+.settings-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+
+.settings-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 168, 104, 0.28);
 }
 
 .settings-tab-row {
@@ -1890,7 +1993,7 @@ body.dense-ui .panel {
 }
 
 body.dense-ui .record-card {
-  padding: 14px 0;
+  padding: 14px 12px 14px 14px;
 }
 
 body.dense-ui .tag-row,
@@ -1916,6 +2019,10 @@ body.dense-ui .memory-composer {
     grid-template-columns: 270px minmax(0, 1fr);
   }
 
+  .workspace--tab {
+    grid-template-columns: 270px minmax(0, 1fr);
+  }
+
   .panel.inspector {
     grid-column: 1 / -1;
     border-top: 1px solid var(--line);
@@ -1936,6 +2043,24 @@ body.dense-ui .memory-composer {
   }
 
   .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-roster-topbar,
+  .tab-roster-subbar {
+    align-items: stretch;
+  }
+
+  .tab-roster-controls,
+  .tab-roster-filters {
+    width: 100%;
+  }
+
+  .toolbar-select--tab {
+    flex: 1 1 140px;
+  }
+
+  .tab-card-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2068,6 +2193,10 @@ body.dense-ui .memory-composer {
   min-width: 144px;
 }
 
+.toolbar-select--tab {
+  min-width: 126px;
+}
+
 .toolbar-select span {
   color: var(--muted);
   font-size: 0.74rem;
@@ -2082,6 +2211,222 @@ body.dense-ui .memory-composer {
   background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
   padding: 0.82rem 0.95rem;
+}
+
+.panel--tab-roster {
+  align-content: start;
+  gap: 20px;
+}
+
+.tab-roster-head {
+  display: grid;
+  gap: 14px;
+}
+
+.tab-roster-topbar,
+.tab-roster-subbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.search-field--tab {
+  flex: 1 1 440px;
+  min-width: 280px;
+}
+
+.search-field--tab .search-shell {
+  width: 100%;
+}
+
+.tab-roster-controls,
+.tab-roster-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.tab-roster-title {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tab-roster-title h2 {
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+}
+
+.tab-roster-title small {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.bulk-bar--tab {
+  margin-top: -2px;
+}
+
+.tab-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 14px;
+}
+
+.tab-contact-card {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+    rgba(13, 17, 25, 0.94);
+  box-shadow: var(--shadow-soft);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.tab-contact-card:hover,
+.tab-contact-card.selected {
+  transform: translateY(-3px);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.tab-contact-card.tone-overdue {
+  border-color: rgba(255, 140, 130, 0.28);
+}
+
+.tab-contact-card.tone-soon {
+  border-color: rgba(245, 168, 104, 0.28);
+}
+
+.tab-contact-card.tone-steady {
+  border-color: rgba(138, 223, 155, 0.2);
+}
+
+.tab-contact-card.selected {
+  border-color: rgba(127, 208, 194, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(18, 22, 31, 0.98);
+}
+
+.tab-contact-card__top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tab-contact-card__identity {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tab-contact-card__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tab-contact-card__copy strong {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-family: var(--sans);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.tab-contact-card__copy small {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.tab-bond {
+  color: var(--accent-tertiary);
+  font-weight: 800;
+  font-size: 1.08rem;
+}
+
+.tab-contact-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-strong);
+  font-size: 0.9rem;
+}
+
+.tab-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.tab-status-dot.tone-overdue {
+  background: var(--danger);
+}
+
+.tab-status-dot.tone-soon {
+  background: var(--warning);
+}
+
+.tab-status-dot.tone-steady {
+  background: var(--success);
+}
+
+.tab-contact-card__schedule {
+  display: grid;
+  gap: 2px;
+}
+
+.tab-contact-card__schedule strong {
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.tab-contact-card__schedule small {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.tab-contact-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tab-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.tab-card-more {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .record-person,
@@ -2137,13 +2482,18 @@ body.dense-ui .memory-composer {
 }
 
 .record-list--compact .record-card {
-  padding: 14px 0;
+  padding: 14px 12px 14px 14px;
+}
+
+.compact-inline {
+  padding-left: 56px;
 }
 
 .compact-inline--minimal {
   gap: 8px 12px;
   align-items: center;
   margin-top: 8px;
+  padding-left: 58px;
   color: var(--muted-strong);
 }
 
@@ -2212,20 +2562,12 @@ body.dense-ui .memory-composer {
 }
 
 .bond-slider-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
+  display: block;
 }
 
 .bond-output {
   color: var(--accent);
   font-weight: 800;
-}
-
-.bond-output--inline {
-  min-width: 3.75rem;
-  text-align: right;
 }
 
 .contact-card.wide {
@@ -2266,6 +2608,16 @@ body.dense-ui .memory-composer {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 14px;
+}
+
+.contact-card input,
+.contact-card select,
+.contact-card textarea {
+  min-height: 56px;
+}
+
+.contact-card textarea {
+  min-height: 116px;
 }
 
 .related-editor {
@@ -2559,6 +2911,19 @@ body.dense-ui .memory-composer {
 .record-list--animated > li:nth-child(8),
 .record-list--animated > li:nth-child(8) .record-card { animation-delay: 240ms; }
 
+.tab-card-grid > .tab-contact-card {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: list-item-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.tab-card-grid > .tab-contact-card:nth-child(1) { animation-delay: 30ms; }
+.tab-card-grid > .tab-contact-card:nth-child(2) { animation-delay: 60ms; }
+.tab-card-grid > .tab-contact-card:nth-child(3) { animation-delay: 90ms; }
+.tab-card-grid > .tab-contact-card:nth-child(4) { animation-delay: 120ms; }
+.tab-card-grid > .tab-contact-card:nth-child(5) { animation-delay: 150ms; }
+.tab-card-grid > .tab-contact-card:nth-child(6) { animation-delay: 180ms; }
+
 .record-select-toggle {
   display: grid;
   place-items: center;
@@ -2683,8 +3048,10 @@ body.dense-ui .memory-composer {
 }
 
 body.compact-pulse .record-list,
+body.compact-pulse .tab-card-grid,
 body.compact-pulse .panel.inspector,
 body.compact-pulse .toolbar-select select,
+body.compact-pulse .tab-roster-head,
 body.compact-pulse .hero-copy,
 body.compact-pulse .summary-grid {
   animation: compact-shift 220ms ease;
@@ -2811,12 +3178,11 @@ body.compact-pulse .summary-grid {
   }
 
   .bond-slider-row {
-    grid-template-columns: 1fr;
-    justify-items: stretch;
+    display: block;
   }
 
-  .bond-output--inline {
-    text-align: left;
+  .memory-composer .form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2833,5 +3199,10 @@ body.compact-pulse .summary-grid {
   .record-person,
   .identity-hero__main {
     align-items: start;
+  }
+
+  .compact-inline,
+  .compact-inline--minimal {
+    padding-left: 48px;
   }
 }

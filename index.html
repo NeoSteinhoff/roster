@@ -4,130 +4,322 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080b12" />
-    <meta name="description" content="Roster is the personal relationship operating system for remembering people, follow-ups, context, and meeting prep." />
+    <meta
+      name="description"
+      content="Roster is the personal relationship operating system for remembering people, follow-ups, context, and meeting prep."
+    />
     <title>Roster | The friend CRM</title>
-    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260401f" />
-    <link rel="stylesheet" href="./site.css?v=20260401f" />
+    <link rel="icon" type="image/svg+xml" href="./assets/roster-logo.svg?v=20260402a" />
+    <link rel="stylesheet" href="./site.css?v=20260402a" />
   </head>
-  <body>
+  <body data-page="home">
     <div class="site-shell">
       <header class="site-nav">
         <a class="brand" href="./index.html">
-          <img src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
+          <img src="./assets/roster-logo.svg?v=20260402a" alt="Roster logo" />
           <span>
             <strong>Roster</strong>
             <small>The friend CRM</small>
           </span>
         </a>
+
         <nav class="site-nav__links">
-          <a href="./pricing.html">Pricing</a>
+          <a href="#product">Product</a>
+          <a href="#modes">Modes</a>
+          <a href="#pricing-teaser">Pricing</a>
           <a href="./app.html">Open app</a>
-          <a class="button button-secondary" href="./pricing.html">Get Roster</a>
+          <a class="button button-primary" href="./pricing.html">Get Roster</a>
         </nav>
       </header>
 
       <main>
-        <section class="hero">
+        <section class="hero hero--immersive">
           <div class="hero-copy">
             <p class="eyebrow">Personal relationship operating system</p>
-            <h1>Remember people like they matter.</h1>
-            <p class="hero-copy__body">
-              Roster keeps context, follow-ups, memories, and meeting prep in one calm workspace so the people you care about never collapse into scattered notes.
+            <h1>Remember people like they actually matter.</h1>
+            <p class="hero-copy__body hero-copy__body--wide">
+              Roster gives you one calm workspace for context, follow-ups, memory, and meeting prep, so your important
+              relationships never collapse into scattered notes, stale contacts, or guesswork.
             </p>
+
             <div class="hero-actions">
-              <a class="button button-primary" href="./pricing.html">See pricing</a>
-              <a class="button button-secondary" href="./app.html">Launch the app</a>
+              <a class="button button-primary" href="./pricing.html">Start with Free</a>
+              <a class="button button-secondary" href="./app.html">Open the desktop app</a>
             </div>
+
             <div class="hero-proof">
-              <span>Local-first</span>
-              <span>Desktop-ready</span>
-              <span>Import from other CRMs</span>
+              <span>Local-first by default</span>
+              <span>Import from CSV</span>
+              <span>Meeting Brief mode</span>
+              <span>Tab, compact, and full workspace views</span>
             </div>
           </div>
 
-          <div class="hero-visual" aria-hidden="true">
-            <div class="hero-surface hero-surface--main">
+          <div class="hero-stage" aria-hidden="true">
+            <div class="hero-stage__glow hero-stage__glow--warm"></div>
+            <div class="hero-stage__glow hero-stage__glow--cool"></div>
+
+            <article class="site-window site-window--wide">
+              <div class="site-window__bar">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="site-window__body">
+                <aside class="site-window__sidebar">
+                  <div class="mini-brand">
+                    <div class="mini-brand__badge">R</div>
+                    <div>
+                      <strong>Roster</strong>
+                      <small>The Friend CRM</small>
+                    </div>
+                  </div>
+                  <button class="mini-primary">+ Add contact</button>
+                  <div class="mini-nav-list">
+                    <div class="mini-nav-item active"><span>All contacts</span><small>8</small></div>
+                    <div class="mini-nav-item"><span>Reach out</span><small>3</small></div>
+                    <div class="mini-nav-item"><span>Archive</span><small>1</small></div>
+                  </div>
+                  <div class="mini-section-label">Tiers</div>
+                  <div class="mini-nav-list mini-nav-list--soft">
+                    <div class="mini-nav-item"><span>Inner Circle</span><small>2</small></div>
+                    <div class="mini-nav-item"><span>Close</span><small>2</small></div>
+                    <div class="mini-nav-item"><span>Medium</span><small>2</small></div>
+                    <div class="mini-nav-item"><span>Acquaintances</span><small>2</small></div>
+                  </div>
+                </aside>
+
+                <div class="site-window__canvas">
+                  <div class="mini-toolbar">
+                    <div class="mini-search">Search contacts...</div>
+                    <div class="mini-toolbar__chips">
+                      <span>Name</span>
+                      <span>Select</span>
+                      <span>Sort</span>
+                    </div>
+                  </div>
+
+                  <div class="mini-cards">
+                    <article class="mini-contact-card tone-red">
+                      <div class="mini-contact-card__top">
+                        <div class="mini-avatar mini-avatar--rose">RS</div>
+                        <div>
+                          <strong>Rayan Shayara</strong>
+                          <small>Call · Dubai/France</small>
+                        </div>
+                      </div>
+                      <div class="mini-contact-card__meta">
+                        <span>family</span><span>local</span><em>Due in 6d</em>
+                      </div>
+                    </article>
+                    <article class="mini-contact-card tone-blue">
+                      <div class="mini-contact-card__top">
+                        <div class="mini-avatar mini-avatar--blue">IW</div>
+                        <div>
+                          <strong>Ivan Wazir</strong>
+                          <small>Call · Dubai</small>
+                        </div>
+                      </div>
+                      <div class="mini-contact-card__meta">
+                        <span>business</span><span>local</span><em>Due in 7d</em>
+                      </div>
+                    </article>
+                    <article class="mini-contact-card tone-green">
+                      <div class="mini-contact-card__top">
+                        <div class="mini-avatar mini-avatar--green">KB</div>
+                        <div>
+                          <strong>Karoline Berg</strong>
+                          <small>Coffee · Dubai</small>
+                        </div>
+                      </div>
+                      <div class="mini-contact-card__meta">
+                        <span>creative</span><span>travel</span><em>On track</em>
+                      </div>
+                    </article>
+                    <article class="mini-contact-card tone-amber">
+                      <div class="mini-contact-card__top">
+                        <div class="mini-avatar mini-avatar--amber">SR</div>
+                        <div>
+                          <strong>Silver Rottweiler</strong>
+                          <small>Coffee · Dubai</small>
+                        </div>
+                      </div>
+                      <div class="mini-contact-card__meta">
+                        <span>dog</span><span>loyal</span><em>On track</em>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="floating-note floating-note--brief">
               <p class="eyebrow">Meeting brief</p>
-              <h2>Walk into every catch-up with context.</h2>
-              <ul>
-                <li>Who they are and what tier they belong in</li>
-                <li>What is alive right now in their world</li>
-                <li>Recent memories, tags, groups, and follow-up rhythm</li>
-              </ul>
-            </div>
-            <div class="hero-surface hero-surface--stack">
-              <strong>Today queue</strong>
-              <small>Birthdays, reconnect nudges, and people worth touching this week.</small>
-            </div>
-            <div class="hero-surface hero-surface--stack tone-accent">
-              <strong>Import in minutes</strong>
-              <small>CSV mapping, duplicate merge, and readable exports for a clean move from your current system.</small>
-            </div>
+              <strong>See the context before you show up.</strong>
+              <small>Tags, memories, what is alive right now, and cadence all in one glance.</small>
+            </article>
+
+            <article class="floating-note floating-note--import">
+              <p class="eyebrow">Switch cleanly</p>
+              <strong>Import from CSV.</strong>
+              <small>Field mapping, duplicate merge, archive support, and readable exports.</small>
+            </article>
           </div>
         </section>
 
-        <section class="feature-ribbon">
+        <section class="metric-strip">
           <article>
-            <p class="eyebrow">Memory</p>
-            <h3>Attach meaning to every relationship.</h3>
-            <p>Save notes, memories, tags, groups, and contact context without the clunky feeling of a sales CRM.</p>
+            <span>Built for</span>
+            <strong>Founders, operators, creators, recruiters, investors, and social power users</strong>
           </article>
           <article>
-            <p class="eyebrow">Timing</p>
-            <h3>Know who needs attention next.</h3>
-            <p>Cadence, reminders, today queue, and touch styles work together so relationships stay warm instead of drifting.</p>
+            <span>Core promise</span>
+            <strong>Never forget who matters, what is alive, or when to reconnect next</strong>
           </article>
           <article>
-            <p class="eyebrow">Prep</p>
-            <h3>Show up informed.</h3>
-            <p>Meeting Brief mode gives you the fastest version of what matters before you see someone.</p>
+            <span>Switching</span>
+            <strong>Bring your current contacts over in minutes, not weeks</strong>
           </article>
         </section>
 
-        <section class="story-grid">
-          <div class="story-block">
-            <p class="eyebrow">Built for</p>
-            <h2>Founders, operators, creators, recruiters, investors, and anyone who hates forgetting important context.</h2>
-          </div>
-          <div class="story-block story-block--muted">
+        <section class="feature-story" id="product">
+          <div class="feature-story__copy">
+            <p class="eyebrow">Why it works</p>
+            <h2>Roster is built around memory, timing, and prep.</h2>
             <p>
-              Roster is for people who meet a lot of people, care about doing relationships thoughtfully, and want something more beautiful and personal than a spreadsheet or a pipeline tool.
+              Instead of treating people like leads, Roster treats them like relationships. Save context, keep a touch
+              rhythm, and pull up the right memory before the next dinner, call, or coffee.
             </p>
           </div>
-        </section>
 
-        <section class="comparison">
-          <div class="comparison__copy">
-            <p class="eyebrow">Why Roster</p>
-            <h2>More personal than a CRM. More useful than a contacts list.</h2>
-          </div>
-          <div class="comparison__list">
-            <div>
-              <strong>Local-first foundation</strong>
-              <p>Your memory system starts useful immediately without needing a whole ops stack first.</p>
-            </div>
-            <div>
-              <strong>Calm premium interface</strong>
-              <p>Dark, focused, and designed to feel like a product you want open every day.</p>
-            </div>
-            <div>
-              <strong>Switching support</strong>
-              <p>CSV import, duplicate cleanup, archive flows, and readable export keep you in control.</p>
-            </div>
+          <div class="feature-story__grid">
+            <article class="story-card">
+              <p class="eyebrow">Memory</p>
+              <h3>Attach meaning to every person.</h3>
+              <p>Memories, notes, groups, tags, related people, and social context live together instead of across five tools.</p>
+            </article>
+            <article class="story-card">
+              <p class="eyebrow">Timing</p>
+              <h3>Know who needs attention next.</h3>
+              <p>Cadence, touch style, birthdays, today queue, this-week queue, and bond health make follow-up feel obvious.</p>
+            </article>
+            <article class="story-card">
+              <p class="eyebrow">Prep</p>
+              <h3>Show up informed.</h3>
+              <p>Meeting Brief mode gives you the fastest version of who they are, what’s changed, and what matters now.</p>
+            </article>
           </div>
         </section>
 
-        <section class="final-cta">
+        <section class="mode-showcase" id="modes">
+          <div class="mode-showcase__intro">
+            <p class="eyebrow">Three ways to work</p>
+            <h2>Use the layout that matches the moment.</h2>
+          </div>
+
+          <div class="mode-grid">
+            <article class="mode-card">
+              <p class="eyebrow">Classic CRM</p>
+              <h3>Full workspace</h3>
+              <p>Sidebar, roster, inspector, memories, contact card, and context stacked into one serious relationship cockpit.</p>
+            </article>
+            <article class="mode-card">
+              <p class="eyebrow">Compact</p>
+              <h3>Faster scanning</h3>
+              <p>Trim the list down to name, next touch, and reconnect timing when you want more people on screen at once.</p>
+            </article>
+            <article class="mode-card mode-card--accent">
+              <p class="eyebrow">New</p>
+              <h3>Tab view</h3>
+              <p>A denser card-grid mode for browsing your roster like a premium contact board while keeping filters and multi-select.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="workflow-band">
+          <div class="workflow-band__copy">
+            <p class="eyebrow">Migration</p>
+            <h2>Move from scattered contacts, Mesh, Clay, CSV exports, or your own spreadsheet.</h2>
+          </div>
+          <div class="workflow-steps">
+            <article>
+              <strong>1. Import</strong>
+              <p>Drop in a CSV and review field mapping before anything lands.</p>
+            </article>
+            <article>
+              <strong>2. Clean</strong>
+              <p>Detect duplicates, merge people, archive old records, and standardize the roster.</p>
+            </article>
+            <article>
+              <strong>3. Operate</strong>
+              <p>Set cadence, capture memories, and use Today / This Week / Meeting Brief to stay in rhythm.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="pricing-teaser" id="pricing-teaser">
+          <div class="pricing-teaser__copy">
+            <p class="eyebrow">Launch pricing</p>
+            <h2>Start free, upgrade when Roster becomes part of your weekly rhythm.</h2>
+            <p>Keep the entry simple: a free local-first plan, a paid Pro plan, and a higher-power Roster Max tier for sync, automation, and deeper workflows.</p>
+          </div>
+
+          <div class="pricing-teaser__cards">
+            <article class="teaser-card">
+              <p class="eyebrow">Free</p>
+              <strong>$0</strong>
+              <small>Local-first forever</small>
+            </article>
+            <article class="teaser-card teaser-card--featured">
+              <p class="eyebrow">Pro</p>
+              <strong>$9/mo</strong>
+              <small>The main plan to launch with</small>
+            </article>
+            <article class="teaser-card">
+              <p class="eyebrow">Roster Max</p>
+              <strong>$19/mo</strong>
+              <small>For sync, automation, and deeper intelligence later</small>
+            </article>
+          </div>
+
+          <div class="pricing-teaser__actions">
+            <a class="button button-primary" href="./pricing.html">See full pricing</a>
+            <a class="button button-secondary" href="./app.html">Try the app</a>
+          </div>
+        </section>
+
+        <section class="faq-strip">
+          <div class="faq-strip__intro">
+            <p class="eyebrow">FAQ</p>
+            <h2>The basics people need before they install.</h2>
+          </div>
+          <div class="faq-list">
+            <details open>
+              <summary>Is Roster for friends or work contacts?</summary>
+              <p>Both. It is built for any relationship where memory, timing, and personal context matter more than a sales pipeline.</p>
+            </details>
+            <details>
+              <summary>Can I import from another system?</summary>
+              <p>Yes. CSV import, duplicate cleanup, merge flows, archive, and readable export are all part of the switching path.</p>
+            </details>
+            <details>
+              <summary>Does it work offline?</summary>
+              <p>Yes. Roster is local-first now, with cloud backup and sync as the next major paid feature layer.</p>
+            </details>
+          </div>
+        </section>
+
+        <section class="final-cta final-cta--strong">
           <div>
-            <p class="eyebrow">Ready to sell</p>
-            <h2>Start with the pricing page and Stripe-hosted checkout.</h2>
+            <p class="eyebrow">Ready to launch</p>
+            <h2>Install the app, import your people, and make your relationship memory system real.</h2>
           </div>
           <div class="final-cta__actions">
-            <a class="button button-primary" href="./pricing.html">Open pricing</a>
-            <a class="button button-secondary" href="./app.html">Try the app</a>
+            <a class="button button-primary" href="./pricing.html">Get Roster</a>
+            <a class="button button-secondary" href="./app.html">Open the desktop app</a>
           </div>
         </section>
       </main>
     </div>
+
+    <script src="./site.js?v=20260402a"></script>
   </body>
 </html>

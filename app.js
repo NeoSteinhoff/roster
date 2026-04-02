@@ -125,6 +125,7 @@ const defaultSettings = {
   dense: false,
   hints: true,
   compact: false,
+  tabView: false,
   scale: 67,
   customTouchStyles: [],
   reminders: {
@@ -297,6 +298,9 @@ function render({ preserveFocus = true } = {}) {
             <button class="button button-secondary ${state.settings.compact ? 'button-active' : ''}" data-action="toggle-compact">
               ${state.settings.compact ? 'Full view' : 'Compact view'}
             </button>
+            <button class="button button-secondary ${state.settings.tabView ? 'button-active' : ''}" data-action="toggle-tab-view">
+              ${state.settings.tabView ? 'Classic CRM' : 'Tab view'}
+            </button>
             ${state.settings.hints ? buildPowerDock() : ''}
           </div>
         </div>
@@ -309,7 +313,7 @@ function render({ preserveFocus = true } = {}) {
         </div>
       </header>
 
-      <main class="workspace">
+      <main class="workspace ${state.settings.tabView ? 'workspace--tab' : ''}">
         <aside class="panel">
           <div class="sidebar-stack">
             ${buildSidebarSection(
@@ -549,6 +553,16 @@ function render({ preserveFocus = true } = {}) {
           </div>
         </aside>
 
+        ${
+          state.settings.tabView
+            ? buildTabRosterPanel({
+                visibleRecords,
+                activeSelectedId,
+                today,
+                groupOptions,
+                tagOptions,
+              })
+            : `
         <section class="panel">
           <div class="roster-header roster-header--stacked">
             <div class="panel-heading">
@@ -744,10 +758,12 @@ function render({ preserveFocus = true } = {}) {
               `
           }
         </section>
+        `
+        }
 
-        <aside class="panel inspector">
+        ${state.settings.tabView ? '' : `<aside class="panel inspector">
           ${buildInspectorPanel(selectedRecord, today)}
-        </aside>
+        </aside>`}
       </main>
     </div>
 
@@ -833,6 +849,188 @@ function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') 
   `
 }
 
+function buildTabRosterPanel({ visibleRecords, activeSelectedId, today, groupOptions, tagOptions }) {
+  const activeRecords = state.records.filter((record) => !record.archived)
+  const viewTitle = getViewTitle(state.filter)
+
+  return `
+    <section class="panel panel--tab-roster">
+      <div class="tab-roster-head">
+        <div class="tab-roster-topbar">
+          <label class="search-field search-field--tab">
+            <div class="search-shell">
+              <input
+                data-search
+                data-focus-key="search"
+                id="search-input"
+                type="search"
+                placeholder="Search contacts..."
+                value="${escapeAttribute(state.query)}"
+              />
+              ${
+                state.query
+                  ? '<button class="search-action" data-action="clear-search" aria-label="Clear search">Clear</button>'
+                  : ''
+              }
+            </div>
+          </label>
+
+          <div class="tab-roster-controls">
+            <label class="toolbar-select toolbar-select--tab">
+              <span>Sort</span>
+              <select data-ui-filter="sort" data-focus-key="sort-mode">
+                <option value="attention" ${state.sortMode === 'attention' ? 'selected' : ''}>Attention</option>
+                <option value="name" ${state.sortMode === 'name' ? 'selected' : ''}>Name</option>
+                <option value="created" ${state.sortMode === 'created' ? 'selected' : ''}>Created</option>
+                <option value="group" ${state.sortMode === 'group' ? 'selected' : ''}>Group</option>
+                <option value="tag" ${state.sortMode === 'tag' ? 'selected' : ''}>Tag</option>
+              </select>
+            </label>
+            <label class="toolbar-select toolbar-select--tab">
+              <span>Direction</span>
+              <select data-ui-filter="direction" data-focus-key="sort-direction">
+                <option value="desc" ${state.sortDirection === 'desc' ? 'selected' : ''}>Newest first</option>
+                <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
+              </select>
+            </label>
+            <button
+              class="button button-secondary toolbar-mode-button ${state.multiSelectMode ? 'button-active' : ''}"
+              type="button"
+              data-action="toggle-multi-select"
+            >
+              ${state.multiSelectMode ? 'Done' : 'Select'}
+            </button>
+          </div>
+        </div>
+
+        <div class="tab-roster-subbar">
+          <div class="tab-roster-title">
+            <h2>${escapeHtml(viewTitle)}</h2>
+            <small>${buildAnimatedValue(String(visibleRecords.length), 'tab-visible-records-count', { tag: 'span', className: 'inline-count' })} people</small>
+          </div>
+          <div class="tab-roster-filters">
+            <label class="toolbar-select toolbar-select--tab">
+              <span>Tier</span>
+              <select data-ui-filter="tier" data-focus-key="tier-filter">
+                <option value="all" ${state.filter === 'all' ? 'selected' : ''}>All people</option>
+                <option value="needs-attention" ${state.filter === 'needs-attention' ? 'selected' : ''}>Needs attention</option>
+                ${tierOrder.map((tier) => `<option value="${tier}" ${state.filter === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
+                <option value="archived" ${state.filter === 'archived' ? 'selected' : ''}>Archived</option>
+              </select>
+            </label>
+            <label class="toolbar-select toolbar-select--tab">
+              <span>Group</span>
+              <select data-ui-filter="group" data-focus-key="group-filter">
+                <option value="">All groups</option>
+                ${groupOptions.map((group) => `<option value="${escapeAttribute(group)}" ${state.groupFilter === group ? 'selected' : ''}>${escapeHtml(group)}</option>`).join('')}
+              </select>
+            </label>
+            <label class="toolbar-select toolbar-select--tab">
+              <span>Tag</span>
+              <select data-ui-filter="tag" data-focus-key="tag-filter">
+                <option value="">All tags</option>
+                ${tagOptions.map((tag) => `<option value="${escapeAttribute(tag)}" ${state.tagFilter === tag ? 'selected' : ''}>${escapeHtml(tag)}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      ${
+        state.selectedIds.length
+          ? `
+            <div class="bulk-bar bulk-bar--tab">
+              <div class="bulk-bar__copy">
+                <p class="eyebrow">Bulk actions</p>
+                <strong>${buildAnimatedValue(String(state.selectedIds.length), 'bulk-count-tab', { tag: 'span', className: 'inline-count' })} selected</strong>
+              </div>
+              <div class="bulk-bar__actions">
+                <button class="button button-secondary" type="button" data-action="bulk-mark-touched">Mark touched</button>
+                <button class="button button-secondary" type="button" data-action="bulk-archive">Archive</button>
+                <button class="button button-secondary" type="button" data-action="bulk-restore">Restore</button>
+                <button class="button button-secondary" type="button" data-action="clear-selection">Clear</button>
+              </div>
+            </div>
+          `
+          : ''
+      }
+
+      ${
+        visibleRecords.length
+          ? `
+            <div class="tab-card-grid">
+              ${visibleRecords
+                .map((record) => {
+                  const attention = getAttentionState(record, today)
+                  const isSelected = activeSelectedId === record.id
+                  const isBulkSelected = state.selectedIds.includes(record.id)
+                  const nextTouch = getNextTouchDate(record)
+                  const lastTouchAgo = differenceInDays(record.lastContact, today)
+                  const previewTags = record.tags.slice(0, 2)
+                  const extraTags = Math.max(0, record.tags.length - previewTags.length)
+                  const metaLine = [record.contact.company, record.city || record.touchStyle].filter(Boolean).join(' · ')
+
+                  return `
+                    <button class="tab-contact-card tone-${attention.tone} ${isSelected ? 'selected' : ''}" data-select="${record.id}">
+                      <div class="tab-contact-card__top">
+                        <div class="tab-contact-card__identity">
+                          ${
+                            state.multiSelectMode
+                              ? `
+                                <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                                  <span></span>
+                                </span>
+                              `
+                              : ''
+                          }
+                          ${buildRecordAvatar(record, 'small')}
+                          <div class="tab-contact-card__copy">
+                            <strong>${escapeHtml(record.name)}</strong>
+                            <small>${escapeHtml(metaLine || tierMeta[record.tier].label)}</small>
+                          </div>
+                        </div>
+                        <span class="tab-bond">${record.bondHealth}%</span>
+                      </div>
+
+                      <div class="tab-contact-card__status">
+                        <span class="tab-status-dot tone-${attention.tone}"></span>
+                        <span>${lastTouchAgo <= 0 ? 'Touched today' : `${lastTouchAgo}d ago`}</span>
+                      </div>
+
+                      <div class="tab-contact-card__schedule">
+                        <strong>${formatShortDate(nextTouch)}</strong>
+                        <small>${formatReconnectTiming(attention.daysUntil)}</small>
+                      </div>
+
+                      <div class="tab-contact-card__footer">
+                        <div class="tab-card-tags">
+                          ${
+                            previewTags.length
+                              ? previewTags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+                              : '<span class="tag ghost">untagged</span>'
+                          }
+                          ${extraTags ? `<span class="tab-card-more">+${extraTags}</span>` : ''}
+                        </div>
+                        <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                      </div>
+                    </button>
+                  `
+                })
+                .join('')}
+            </div>
+          `
+          : `
+            <div class="empty-state">
+              <p class="eyebrow">No matches</p>
+              <h3>Nothing fits this tab view yet.</h3>
+              <p class="empty-copy">Try another filter, group, tag, or search term.</p>
+            </div>
+          `
+      }
+    </section>
+  `
+}
+
 function buildInspectorSection(key, eyebrow, title, summary, content, badge = '') {
   return buildCollapsibleSection({
     scope: 'inspector',
@@ -903,7 +1101,7 @@ function buildInspector(record, today) {
       <button class="button button-primary" data-action="mark-touched">Mark touched today</button>
       <button class="button button-secondary" data-action="open-brief">Meeting brief</button>
       <button class="button button-secondary" data-action="focus-memory">Add memory</button>
-      <button class="button button-secondary" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
+      <button class="button button-secondary button-archive" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
         ${record.archived ? 'Restore' : 'Archive'}
       </button>
     </div>
@@ -1017,11 +1215,10 @@ function buildInspectorBasics(record, tagSuggestions, groupSuggestions) {
       <label class="wide">
         <div class="field-head">
           <span>Bond health</span>
-          <output class="bond-output" data-bond-output>${record.bondHealth}%</output>
+          <output class="bond-output" data-bond-output data-bond-output-inline>${record.bondHealth}%</output>
         </div>
         <div class="bond-slider-row">
           <input data-record-field="bondHealth" data-focus-key="record-health" type="range" min="0" max="100" value="${record.bondHealth}" />
-          <output class="bond-output bond-output--inline" data-bond-output-inline>${record.bondHealth}%</output>
         </div>
       </label>
 
@@ -1266,7 +1463,7 @@ function buildMemorySection(record) {
 
           <label>
             <span>Shortcut</span>
-            <div class="settings-pill">Cmd/Ctrl + Enter to save</div>
+            <div class="memory-shortcut-note">Cmd/Ctrl + Enter to save</div>
           </label>
         </div>
 
@@ -1357,7 +1554,7 @@ function buildProfilePanel(record, today) {
           </button>
           <button class="button button-secondary" type="button" data-action="open-brief">Meeting brief</button>
           <button class="button button-secondary" type="button" data-action="focus-memory">Add memory</button>
-          <button class="button button-secondary" type="button" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
+          <button class="button button-secondary button-archive" type="button" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
             ${record.archived ? 'Restore' : 'Archive'}
           </button>
           <button class="button button-danger" type="button" data-action="delete-person">Delete</button>
@@ -1782,6 +1979,17 @@ function buildGeneralTab() {
         </div>
         <label class="toggle">
           <input type="checkbox" data-setting-field="compact" ${state.settings.compact ? 'checked' : ''} />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="settings-switch">
+        <div class="settings-row">
+          <strong>Tab roster mode</strong>
+          <small>Swap the main workspace into a denser grid of contact tabs with the inspector hidden.</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" data-setting-field="tabView" ${state.settings.tabView ? 'checked' : ''} />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
       </div>
@@ -2345,6 +2553,12 @@ function handleClick(event) {
         animateCompactToggle()
         render({ preserveFocus: false })
         return
+      case 'toggle-tab-view':
+        state.settings.tabView = !state.settings.tabView
+        persistSettings()
+        animateCompactToggle()
+        render({ preserveFocus: false })
+        return
       case 'toggle-multi-select':
         state.multiSelectMode = !state.multiSelectMode
         if (!state.multiSelectMode) {
@@ -2785,10 +2999,10 @@ function handleInput(event) {
     persistSettings()
     applySettings()
     startReminderLoop()
-    if (settingField === 'compact') {
+    if (settingField === 'compact' || settingField === 'tabView') {
       animateCompactToggle()
     }
-    if (settingField === 'scale' || settingField === 'compact' || reminderField) {
+    if (settingField === 'scale' || settingField === 'compact' || settingField === 'tabView' || reminderField) {
       render({ preserveFocus: false })
     }
     return
@@ -4033,6 +4247,7 @@ function applySettings() {
   document.body.classList.toggle('motion-off', !state.settings.motion)
   document.body.classList.toggle('dense-ui', !!state.settings.dense)
   document.body.classList.toggle('compact-view', !!state.settings.compact)
+  document.body.classList.toggle('tab-view', !!state.settings.tabView)
   document.documentElement.style.setProperty('--frame-scale', String(state.settings.scale / 100))
 }
 
@@ -4276,6 +4491,7 @@ function normalizeSettings(value = {}) {
     dense: typeof value.dense === 'boolean' ? value.dense : defaultSettings.dense,
     hints: typeof value.hints === 'boolean' ? value.hints : defaultSettings.hints,
     compact: typeof value.compact === 'boolean' ? value.compact : defaultSettings.compact,
+    tabView: typeof value.tabView === 'boolean' ? value.tabView : defaultSettings.tabView,
     scale: clamp(Number(value.scale) || defaultSettings.scale, 60, 100),
     customTouchStyles: resolvedTouchStyles.filter((style) => !baseTouchStyles.includes(style)),
     reminders: {
@@ -4367,6 +4583,14 @@ function filterButton(key, label, note, count) {
       <em>${buildAnimatedValue(String(count), `filter-${key}-count`, { tag: 'span', className: 'filter-count' })}</em>
     </button>
   `
+}
+
+function getViewTitle(filter) {
+  if (filter === 'all') return 'All contacts'
+  if (filter === 'needs-attention') return 'Reach out'
+  if (filter === 'archived') return 'Archive'
+  if (tierMeta[filter]) return tierMeta[filter].label
+  return 'Roster'
 }
 
 function metricCard(label, value, tone, detail = '') {

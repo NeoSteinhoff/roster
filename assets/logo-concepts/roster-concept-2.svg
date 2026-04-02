@@ -1,0 +1,39 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="240" fill="url(#panel)"/>
+  <rect x="44" y="44" width="936" height="936" rx="210" stroke="url(#edge)" stroke-width="8"/>
+  <circle cx="768" cy="248" r="164" fill="url(#warmGlow)" fill-opacity="0.9"/>
+  <circle cx="272" cy="772" r="142" fill="url(#coolGlow)" fill-opacity="0.7"/>
+  <path d="M296 228H516C644 228 724 301 724 407C724 489 674 548 589 575L726 798H582L473 617H418V798H296V228ZM418 520H498C579 520 632 481 632 419C632 357 579 320 498 320H418V520Z" fill="#FFF8EF"/>
+  <path d="M635 270C721 302 782 382 782 477C782 581 709 668 610 688" stroke="url(#orbitWarm)" stroke-width="42" stroke-linecap="round"/>
+  <path d="M618 748C575 770 526 782 474 782C314 782 186 654 186 494C186 384 247 288 338 240" stroke="url(#orbitCool)" stroke-width="34" stroke-linecap="round"/>
+  <circle cx="632" cy="688" r="28" fill="#FDB67D"/>
+  <circle cx="338" cy="240" r="22" fill="#7FD0C2"/>
+  <defs>
+    <linearGradient id="panel" x1="110" y1="86" x2="914" y2="978" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10151F"/>
+      <stop offset="0.54" stop-color="#161C28"/>
+      <stop offset="1" stop-color="#0E131B"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="110" y1="86" x2="918" y2="946" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2E3440"/>
+      <stop offset="0.5" stop-color="#222935"/>
+      <stop offset="1" stop-color="#3A4351"/>
+    </linearGradient>
+    <radialGradient id="warmGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(768 248) rotate(90) scale(164)">
+      <stop stop-color="#FFBA80"/>
+      <stop offset="1" stop-color="#FFBA80" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="coolGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(272 772) rotate(90) scale(142)">
+      <stop stop-color="#6FD4C7"/>
+      <stop offset="1" stop-color="#6FD4C7" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="orbitWarm" x1="613" y1="278" x2="788" y2="687" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE4C6"/>
+      <stop offset="1" stop-color="#F4A968"/>
+    </linearGradient>
+    <linearGradient id="orbitCool" x1="196" y1="734" x2="362" y2="252" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#90E1D6"/>
+      <stop offset="1" stop-color="#3BAF9E"/>
+    </linearGradient>
+  </defs>
+</svg>
