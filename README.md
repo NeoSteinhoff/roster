@@ -46,7 +46,7 @@ npm run package:mac
 
 The packaged app lands in:
 
-`/Users/neosteinhoff/Documents/roster/dist/Roster-darwin-arm64/Roster.app`
+`/Users/neosteinhoff/Documents/roster/artifacts/dist/Roster-darwin-arm64/Roster.app`
 
 ## Stripe billing setup
 
@@ -65,6 +65,7 @@ Recommended setup:
 - optionally create a Stripe customer portal link
 
 The site will automatically route pricing buttons to those hosted Stripe links.
+If they are still blank, the pricing page falls back to your contact email so interested users are not dropped into a dead checkout.
 
 ## Data model
 
@@ -83,4 +84,4 @@ The JSON memory file is designed to stay readable and editable by humans.
 
 ## Current version
 
-`v0.9.1`
+`v0.9.3`

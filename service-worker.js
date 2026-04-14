@@ -1,16 +1,16 @@
-const CACHE_NAME = 'roster-shell-v20260414a'
+const CACHE_NAME = 'roster-shell-v20260414b'
 const SHELL_ASSETS = [
   './',
   './index.html',
   './app.html',
   './pricing.html',
-  './site.css?v=20260402a',
-  './site.js?v=20260402a',
-  './billing-config.js?v=20260401f',
-  './styles.css?v=20260414a',
-  './app.js?v=20260414a',
-  './manifest.webmanifest?v=20260414a',
-  './assets/roster-logo.svg?v=20260414a',
+  './site.css?v=20260414b',
+  './site.js?v=20260414b',
+  './billing-config.js?v=20260414b',
+  './styles.css?v=20260414b',
+  './app.js?v=20260414b',
+  './manifest.webmanifest?v=20260414b',
+  './assets/roster-logo.svg?v=20260414b',
   './assets/icon.iconset/icon_256x256.png',
   './assets/icon.iconset/icon_512x512.png',
 ]

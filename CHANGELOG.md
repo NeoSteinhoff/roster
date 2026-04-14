@@ -3,6 +3,8 @@
 ## v0.9.3
 - Added a richer custom cursor, drag-to-photo affordances, smoother command palette keyboard motion, and cleaner bulk-selection polish.
 - Added master inspector collapse behavior from the selected-person card and synced the packaged Apple Silicon build to the latest UX pass.
+- Improved the seeded demo roster so the product opens with believable memories, groups, and follow-up timing instead of looking half-empty.
+- Clarified the pricing fallback path when checkout links are not configured yet, and fixed stale cache-busting/version references across the app shell.
 
 ## v0.9.2
 - Added boot, onboarding, and collapsible inspector/rail structure so the workspace opens cleaner and teaches itself on first run.

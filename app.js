@@ -3820,7 +3820,7 @@ function buildBootSplash() {
   return `
     <div class="boot-overlay">
       <div class="boot-panel">
-        <img class="boot-logo" src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
+        <img class="boot-logo" src="./assets/roster-logo.svg?v=20260414b" alt="Roster logo" />
         <div class="boot-copy">
           <p class="eyebrow">Roster</p>
           <strong>Warming the orbit.</strong>
