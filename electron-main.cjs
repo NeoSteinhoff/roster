@@ -1,12 +1,26 @@
 const { app, BrowserWindow, Menu, nativeTheme } = require('electron')
 const path = require('path')
 
+function buildAppMenu() {
+  return Menu.buildFromTemplate([
+    { role: 'appMenu' },
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+  ])
+}
+
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1680,
-    height: 1120,
-    minWidth: 1180,
-    minHeight: 760,
+    width: 1560,
+    height: 1040,
+    minWidth: 980,
+    minHeight: 680,
+    resizable: true,
+    maximizable: true,
+    fullscreenable: true,
+    useContentSize: true,
     backgroundColor: '#080b12',
     title: 'Roster',
     autoHideMenuBar: true,
@@ -19,11 +33,17 @@ function createWindow() {
   })
 
   nativeTheme.themeSource = 'dark'
+  window.webContents.on('before-input-event', (event, input) => {
+    if (process.platform === 'darwin' && input.type === 'keyDown' && input.meta && String(input.key).toLowerCase() === 'q') {
+      event.preventDefault()
+      app.quit()
+    }
+  })
   window.loadFile(path.join(__dirname, 'app.html'))
 }
 
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(null)
+  Menu.setApplicationMenu(buildAppMenu())
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(path.join(__dirname, 'assets', 'roster-logo.svg.png'))
   }

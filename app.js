@@ -2,10 +2,38 @@ const RECORDS_KEY = 'friends-circle-crm.static.v4'
 const SETTINGS_KEY = 'friends-circle-crm.settings.v1'
 const DRAFTS_KEY = 'friends-circle-crm.drafts.v1'
 const REMINDER_LOG_KEY = 'friends-circle-crm.reminders.v1'
-const APP_VERSION = '0.9.1'
+const GEOCODE_CACHE_KEY = 'friends-circle-crm.geocode-cache.v1'
+const APP_VERSION = '0.9.3'
 const PROFILE_CLOSE_MS = 220
+const workspaceModes = ['classic', 'tab', 'map', 'relationships', 'timeline']
 
-const tierOrder = ['inner-circle', 'close', 'medium', 'acquaintance']
+const baseTierDefinitions = [
+  {
+    key: 'inner-circle',
+    label: 'Inner circle',
+    cadenceHint: 'Touch weekly',
+    description: 'Your closest people. Prioritize them first.',
+  },
+  {
+    key: 'close',
+    label: 'Close',
+    cadenceHint: 'Every 10-14 days',
+    description: 'Strong friendships that deserve active upkeep.',
+  },
+  {
+    key: 'medium',
+    label: 'Medium',
+    cadenceHint: 'Every 2-4 weeks',
+    description: 'Solid friends who can drift if you do not stay intentional.',
+  },
+  {
+    key: 'acquaintance',
+    label: 'Acquaintance',
+    cadenceHint: 'Monthly or event-based',
+    description: 'Lighter relationships, social orbit, and warm intros.',
+  },
+]
+const tierOrder = baseTierDefinitions.map((tier) => tier.key)
 const baseTouchStyles = ['Text', 'Call', 'Coffee', 'Dinner', 'Voice note']
 const suggestedTags = [
   'family',
@@ -27,10 +55,11 @@ const suggestedTags = [
 ]
 
 const settingsTabs = [
-  { key: 'general', label: 'General' },
-  { key: 'defaults', label: 'Defaults' },
-  { key: 'shortcuts', label: 'Shortcuts' },
-  { key: 'data', label: 'Data' },
+  { key: 'general', label: 'General', eyebrow: 'Workspace', title: 'Visuals, motion, and daily controls', summary: 'Tune the app shell, motion behavior, scale, and reminders without hunting through separate modals.' },
+  { key: 'defaults', label: 'Defaults', eyebrow: 'Template', title: 'New-person defaults', summary: 'Set the starting tier, cadence, tags, groups, and city so adding people feels instant.' },
+  { key: 'extra', label: 'Extra features', eyebrow: 'Structure', title: 'Modules, tiers, and cleanup', summary: 'Control optional modules, custom lanes, tutorial behavior, and workspace visibility.' },
+  { key: 'shortcuts', label: 'Shortcuts', eyebrow: 'Keyboard', title: 'Keys and command habits', summary: 'See the shortcuts map and the command palette actions that keep the app fast.' },
+  { key: 'data', label: 'Data', eyebrow: 'Safety', title: 'Imports, exports, and recovery', summary: 'Handle backups, merges, imports, duplicates, and resets from one safer control room.' },
 ]
 
 const themeOptions = [
@@ -55,26 +84,99 @@ const contactFields = [
 ]
 
 const hotkeyLegend = [
+  { keys: 'Cmd/Ctrl + K', action: 'Open quick actions' },
   { keys: '/', action: 'Search roster' },
   { keys: 'N', action: 'Add person' },
   { keys: 'G', action: 'Open settings' },
   { keys: '?', action: 'Open shortcuts tab' },
+  { keys: 'S', action: 'Toggle multi-select' },
   { keys: 'J / K', action: 'Move selection' },
   { keys: 'M', action: 'Mark touched today' },
   { keys: 'A', action: 'Archive or restore person' },
-  { keys: 'P', action: 'Open full profile' },
-  { keys: 'B', action: 'Open meeting brief' },
-  { keys: 'Q', action: 'Open quick capture' },
+  { keys: 'P', action: 'Toggle full profile' },
+  { keys: 'B', action: 'Toggle meeting brief' },
+  { keys: 'Q', action: 'Toggle quick capture' },
+  { keys: 'U', action: 'Toggle orbit' },
+  { keys: 'C', action: 'Toggle compact mode' },
   { keys: 'E', action: 'Focus memory' },
   { keys: 'T', action: 'Focus tags' },
   { keys: 'F', action: 'Focus active context' },
   { keys: 'O', action: 'Focus notes' },
+  { keys: '[', action: 'Hide or show left rail' },
+  { keys: ']', action: 'Hide or show inspector' },
+  { keys: 'Cmd/Ctrl + A', action: 'Select all visible' },
   { keys: 'I', action: 'Import memory file' },
   { keys: 'X', action: 'Export memory file' },
   { keys: 'Cmd/Ctrl + ,', action: 'Open settings' },
   { keys: 'Cmd/Ctrl + Enter', action: 'Save memory' },
   { keys: '1-6', action: 'Jump filters' },
   { keys: 'Esc', action: 'Close settings' },
+]
+
+const onboardingSteps = [
+  {
+    eyebrow: 'Welcome',
+    title: 'Roster helps you remember people without becoming weirdly robotic about it.',
+    body: 'Think of it as a calm relationship cockpit: context, memories, cadence, and follow-up timing, all in one place.',
+    target: 'hero-actions',
+    placement: 'bottom-left',
+  },
+  {
+    eyebrow: 'Views',
+    title: 'These modes change how your roster thinks.',
+    body: 'Classic is your full CRM. Tab is faster. Map is place-based. Timeline is story-based. Use the one that matches your brain that day.',
+    target: 'hero-modes',
+    placement: 'bottom-left',
+  },
+  {
+    eyebrow: 'Left rail',
+    title: 'This is where you change the lens.',
+    body: 'Views, Today, Groups, and Tags all live here. If the rail ever feels noisy, hide it with [ and bring it back when you need it.',
+    target: 'left-rail',
+    placement: 'right',
+  },
+  {
+    eyebrow: 'Today',
+    title: 'Today is your nudge engine.',
+    body: 'It groups who deserves a touch now, tomorrow, and this week. Attention mode is the same module with a sharper urgency filter.',
+    target: 'today-module',
+    placement: 'right',
+  },
+  {
+    eyebrow: 'Inspector',
+    title: 'The person card is your launchpad.',
+    body: 'Open the selected-person section for identity, photo, full profile, and archive controls. You can hide the whole inspector with ].',
+    target: 'inspector-identity',
+    placement: 'left',
+  },
+  {
+    eyebrow: 'Cadence',
+    title: 'Cadence means how often you want Roster to remind you to reconnect.',
+    body: 'A 7 day cadence means weekly. A 21 day cadence means roughly every three weeks. Bond health is your gut-check score, not a fake science meter.',
+    target: 'inspector-basics',
+    placement: 'left',
+  },
+  {
+    eyebrow: 'Bulk mode',
+    title: 'Multi-select is for decisive cleaning, not suffering.',
+    body: 'Select a bunch of people, then archive, restore, tag, group, or mass-edit them together. It should feel like a sweep, not a chore.',
+    target: 'bulk-actions',
+    placement: 'top',
+  },
+  {
+    eyebrow: 'Safety',
+    title: 'Archive is reversible. Delete is forever forever.',
+    body: 'If someone is tagged, grouped, tiered, or memory-heavy, Roster now double-checks before you yeet them into the void.',
+    target: 'inspector-status',
+    placement: 'left',
+  },
+  {
+    eyebrow: 'Settings',
+    title: 'Settings is the control room.',
+    body: 'Use Extra features to hide modules, manage custom tiers, delete stale tags/groups, and replay this tutorial when future-you forgets what cadence means.',
+    target: 'hero-settings',
+    placement: 'bottom-left',
+  },
 ]
 
 const defaultContactSettings = {
@@ -87,36 +189,136 @@ const defaultContactSettings = {
   groups: [],
 }
 
-const tierMeta = {
-  'inner-circle': {
-    label: 'Inner circle',
-    cadenceHint: 'Touch weekly',
-    description: 'Your closest people. Prioritize them first.',
-  },
-  close: {
-    label: 'Close',
-    cadenceHint: 'Every 10-14 days',
-    description: 'Strong friendships that deserve active upkeep.',
-  },
-  medium: {
-    label: 'Medium',
-    cadenceHint: 'Every 2-4 weeks',
-    description: 'Solid friends who can drift if you do not stay intentional.',
-  },
-  acquaintance: {
-    label: 'Acquaintance',
-    cadenceHint: 'Monthly or event-based',
-    description: 'Lighter relationships, social orbit, and warm intros.',
-  },
-}
+const tierMeta = Object.fromEntries(
+  baseTierDefinitions.map((tier) => [
+    tier.key,
+    {
+      label: tier.label,
+      cadenceHint: tier.cadenceHint,
+      description: tier.description,
+    },
+  ]),
+)
 
 const initialRecords = [
-  createSeedRecord('Ivan Wazir', 'inner-circle', '2026-03-25', 7, ['local', 'business'], 'Dubai'),
-  createSeedRecord('Silver Rottweiler', 'close', '2026-03-08', 14, ['dog', 'loyal', 'local']),
-  createSeedRecord('Karoline Berg', 'close', '2026-03-18', 10, ['creative', 'europe', 'travel'], 'Dubai'),
-  createSeedRecord('Rayan Shayara', 'inner-circle', '2026-03-28', 7, ['family', 'local']),
-  createSeedRecord('Rayhan', 'medium', '2026-03-01', 21, ['long-distance', 'friend']),
-  createSeedRecord('Gaspard', 'acquaintance', '2026-02-12', 45, ['social', 'europe']),
+  createSeedRecord({
+    name: 'Ivan Wazir',
+    tier: 'inner-circle',
+    lastContactOffsetDays: -5,
+    cadenceDays: 7,
+    tags: ['local', 'business', 'operator'],
+    city: 'Dubai',
+    groups: ['operators', 'inner circle'],
+    focus: 'Hiring two operators and deciding whether to spend May in Paris.',
+    notes: 'Prefers direct voice notes over long text threads. Best time to reach him is after 6pm.',
+    relatedIds: ['rayan-shayara', 'karoline-berg'],
+    contact: {
+      email: 'ivan@harborstudio.co',
+      whatsapp: '+971 55 010 2471',
+      linkedin: 'linkedin.com/in/ivanwazir',
+      company: 'Harbor Studio',
+      birthday: addDays(todayStamp(), 4),
+    },
+    memories: [
+      createSeedMemory(-19, 'Moved the ops offsite to Dubai and is testing whether the team should anchor there for Q2.'),
+      createSeedMemory(-6, 'Asked for a warm intro to a recruiter who understands founder-operator talent.'),
+    ],
+  }),
+  createSeedRecord({
+    name: 'Silver Rottweiler',
+    tier: 'close',
+    lastContactOffsetDays: -11,
+    cadenceDays: 14,
+    tags: ['dog', 'loyal', 'local'],
+    city: 'Dubai Hills',
+    groups: ['daily life'],
+    focus: 'Recovering from a rough vet week and back to sunrise park laps.',
+    notes: 'The profile is intentionally weird, but it does show that Roster can track any relationship that matters.',
+    memories: [
+      createSeedMemory(-14, 'Needed a follow-up with the vet after a stomach scare.'),
+      createSeedMemory(-2, 'Back to normal energy and obsessed with the tennis balls again.'),
+    ],
+  }),
+  createSeedRecord({
+    name: 'Karoline Berg',
+    tier: 'close',
+    lastContactOffsetDays: -10,
+    cadenceDays: 10,
+    tags: ['creative', 'europe', 'travel'],
+    city: 'Dubai',
+    groups: ['creative circle', 'europe'],
+    focus: 'Planning a small dinner for visiting founders during Dubai AI Week.',
+    notes: 'Strong taste, fast feedback, and a very useful person to sanity-check design direction with.',
+    relatedIds: ['ivan-wazir', 'gaspard'],
+    contact: {
+      email: 'karoline@northfoundry.co',
+      instagram: '@karolineberg',
+      website: 'https://northfoundry.co',
+      company: 'North Foundry',
+    },
+    memories: [
+      createSeedMemory(-22, 'Shared a sharp point about using friend CRM language that feels warm instead of salesy.'),
+      createSeedMemory(-3, 'May be able to host a founder dinner if the guest list stays under ten.'),
+    ],
+  }),
+  createSeedRecord({
+    name: 'Rayan Shayara',
+    tier: 'inner-circle',
+    lastContactOffsetDays: -8,
+    cadenceDays: 7,
+    tags: ['family', 'local'],
+    city: 'Dubai',
+    groups: ['family'],
+    focus: 'Working through a move decision and could use a calm check-in, not a high-energy one.',
+    notes: 'Family first. Usually appreciates practical help more than abstract advice.',
+    relatedIds: ['ivan-wazir'],
+    contact: {
+      whatsapp: '+971 55 440 1188',
+      birthday: addDays(todayStamp(), 11),
+    },
+    memories: [
+      createSeedMemory(-12, 'Mentioned that the move feels bigger emotionally than logistically.'),
+      createSeedMemory(-1, 'Wanted a light check-in after a long week rather than a long phone call.'),
+    ],
+  }),
+  createSeedRecord({
+    name: 'Rayhan',
+    tier: 'medium',
+    lastContactOffsetDays: -15,
+    cadenceDays: 21,
+    tags: ['long-distance', 'friend'],
+    city: 'London',
+    groups: ['long-distance'],
+    focus: 'Exploring a new role and open to intros in London.',
+    notes: 'Long-distance, but the relationship stays strong when the check-ins are intentional and specific.',
+    contact: {
+      telegram: '@rayhan',
+      linkedin: 'linkedin.com/in/rayhan',
+    },
+    memories: [
+      createSeedMemory(-28, 'Was deciding between staying in consulting or moving into operator work.'),
+      createSeedMemory(-9, 'Said London is feeling expensive and slightly chaotic, but energizing.'),
+    ],
+  }),
+  createSeedRecord({
+    name: 'Gaspard',
+    tier: 'acquaintance',
+    lastContactOffsetDays: -32,
+    cadenceDays: 45,
+    tags: ['social', 'europe'],
+    city: 'Paris',
+    groups: ['paris'],
+    focus: 'A good warm-intro node for Paris creative and salon-style dinners.',
+    notes: 'Not a weekly person, but a great one to keep warm before Europe trips.',
+    relatedIds: ['karoline-berg'],
+    contact: {
+      instagram: '@gaspard.rossi',
+      company: 'Independent',
+    },
+    memories: [
+      createSeedMemory(-27, 'Invited me to a small dinner in Paris the next time I am in town.'),
+    ],
+  }),
 ]
 
 const defaultSettings = {
@@ -125,9 +327,27 @@ const defaultSettings = {
   dense: false,
   hints: true,
   compact: false,
+  ultraCompact: false,
+  leftRailVisible: true,
+  rightRailVisible: true,
+  workspaceMode: 'classic',
+  tabLayout: 'cards',
+  mapLayer: 'dark',
   tabView: false,
-  scale: 67,
+  scale: 82,
   customTouchStyles: [],
+  customTiers: [],
+  features: {
+    sidebarViews: true,
+    sidebarToday: true,
+    sidebarTiers: false,
+    sidebarGroups: true,
+    sidebarTags: true,
+    sidebarQueue: true,
+    compactToggle: true,
+    tabViewToggle: true,
+    shortcutDock: true,
+  },
   reminders: {
     enabled: false,
     range: 'week',
@@ -136,6 +356,7 @@ const defaultSettings = {
     meetingLeadDays: 1,
   },
   defaults: { ...defaultContactSettings },
+  tutorialSeen: false,
 }
 
 const shortDate = new Intl.DateTimeFormat('en', {
@@ -176,11 +397,13 @@ const state = {
     queue: false,
   },
   inspectorPanels: {
-    basics: true,
-    notes: true,
-    contact: true,
-    related: true,
-    memory: true,
+    identity: false,
+    status: false,
+    basics: false,
+    notes: false,
+    contact: false,
+    related: false,
+    memory: false,
   },
   settingsOpen: false,
   profileOpen: false,
@@ -188,6 +411,10 @@ const state = {
   profileEditOpen: false,
   briefOpen: false,
   quickCaptureOpen: false,
+  networkOpen: false,
+  commandPaletteOpen: false,
+  commandQuery: '',
+  commandPaletteIndex: 0,
   quickCaptureMode: 'memory',
   quickCaptureRecordId: null,
   csvImportReview: null,
@@ -207,22 +434,62 @@ const state = {
     memory: '',
     note: '',
   },
+  tierDraft: {
+    label: '',
+    cadenceHint: '',
+    description: '',
+  },
   memoryDraft: {
     date: todayStamp(),
     text: '',
   },
+  onboardingOpen: false,
+  onboardingStep: 0,
+  todayPanelMode: 'today',
+  settingsAnimating: false,
+  booting: true,
+  bulkEditorOpen: false,
+  bulkEditorMode: 'all',
+  bulkDraft: {
+    tier: '',
+    city: '',
+    touchStyle: '',
+    cadenceDays: '',
+    addTag: '',
+    removeTag: '',
+    addGroup: '',
+    removeGroup: '',
+  },
+  mapLocationPanels: {},
 }
 
+syncTierConfig(state.settings)
+state.records = state.records.map(standardizeRecord).filter(Boolean)
 state.selectedId = state.records[0] ? state.records[0].id : null
 state.quickCaptureRecordId = state.selectedId
 restoreDraftsForSelected(state.selectedId)
 hydrateCaptureIntent()
+state.onboardingOpen = !state.settings.tutorialSeen && state.records.length === 0
+if (state.onboardingOpen) {
+  prepareOnboardingStep()
+}
 
 const app = document.querySelector('#app')
 let compactPulseTimer = null
 let profileCloseTimer = null
 let reminderTimer = null
+let settingsAnimationTimer = null
+let touchRewardTimer = null
+let bootTimer = null
+let cursorCleanup = null
+let rosterMap = null
+let rosterMapMarkersLayer = null
+let rosterMapTileLayers = {}
+const geocodeCache = loadGeocodeCache()
+const geocodePending = new Set()
 const animatedValueHistory = new Map()
+const animatedTextHistory = new Map()
+const bodyPulseTimers = new Map()
 
 if (app) {
   app.addEventListener('click', handleClick)
@@ -234,13 +501,103 @@ if (app) {
 }
 
 document.addEventListener('keydown', handleKeydown)
+window.addEventListener('resize', () => {
+  if (state.onboardingOpen) {
+    positionOnboardingSpotlight()
+  }
+})
 
 render({ preserveFocus: false })
 startReminderLoop()
+if (bootTimer) {
+  window.clearTimeout(bootTimer)
+}
+bootTimer = window.setTimeout(() => {
+  state.booting = false
+  render({ preserveFocus: false })
+  bootTimer = null
+}, 720)
+
+function resolveTierDefinitions(customTiers = []) {
+  const seen = new Set()
+  const normalizedCustom = Array.isArray(customTiers)
+    ? customTiers
+        .map((tier) => normalizeTierDefinition(tier))
+        .filter(Boolean)
+    : []
+
+  return [...baseTierDefinitions, ...normalizedCustom].filter((tier) => {
+    const key = tier.key.toLowerCase()
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+}
+
+function normalizeTierDefinition(value) {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const label = String(value.label || '').trim()
+  const cadenceHint = String(value.cadenceHint || '').trim()
+  const description = String(value.description || '').trim()
+  const key = normalizeTierKey(value.key || label)
+
+  if (!key || !label) {
+    return null
+  }
+
+  if (baseTierDefinitions.some((tier) => tier.key === key)) {
+    return null
+  }
+
+  return {
+    key,
+    label,
+    cadenceHint: cadenceHint || 'Custom cadence',
+    description: description || 'A custom relationship lane for your roster.',
+  }
+}
+
+function normalizeTierKey(value) {
+  return slugify(value).replace(/^-+|-+$/g, '')
+}
+
+function getWorkspaceMode() {
+  const mode = state.settings.workspaceMode || (state.settings.tabView ? 'tab' : 'classic')
+  return workspaceModes.includes(mode) ? mode : 'classic'
+}
+
+function syncTierConfig(settings = defaultSettings) {
+  const resolved = resolveTierDefinitions(settings.customTiers)
+  tierOrder.splice(0, tierOrder.length, ...resolved.map((tier) => tier.key))
+
+  for (const key of Object.keys(tierMeta)) {
+    if (!resolved.some((tier) => tier.key === key)) {
+      delete tierMeta[key]
+    }
+  }
+
+  for (const tier of resolved) {
+    tierMeta[tier.key] = {
+      label: tier.label,
+      cadenceHint: tier.cadenceHint,
+      description: tier.description,
+    }
+  }
+}
 
 function render({ preserveFocus = true } = {}) {
   if (!app) {
     return
+  }
+
+  if (cursorCleanup) {
+    cursorCleanup()
+    cursorCleanup = null
   }
 
   const focusSnapshot = preserveFocus ? captureFocus() : null
@@ -275,54 +632,64 @@ function render({ preserveFocus = true } = {}) {
   const tagOptions = getUniqueTags(scopedRecords)
   const topTagOptions = tagOptions.slice(0, 10)
   const duplicateGroups = getDuplicateGroups(records)
+  const featureFlags = state.settings.features || defaultSettings.features
+  const workspaceMode = getWorkspaceMode()
+  const ultraCompactActive = workspaceMode === 'classic' && state.settings.ultraCompact
+  const showLeftRail = state.settings.leftRailVisible !== false
+  const showRightRail = workspaceMode === 'classic' && state.settings.rightRailVisible !== false
+  const workspaceShellClass = [
+    'workspace',
+    `workspace--${workspaceMode}`,
+    ultraCompactActive ? 'workspace--ultra-compact' : '',
+    !showLeftRail ? 'workspace--left-hidden' : '',
+    !showRightRail ? 'workspace--right-hidden' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const heroMarkup = buildHeroSection({
+    workspaceMode,
+    featureFlags,
+    activeRecords,
+    selectedRecord,
+    needsAttentionCount,
+    overdueCount,
+    memoryCount,
+    averageHealth,
+    topQueue,
+    todayQueue,
+    thisWeekQueue,
+    ultraCompactActive,
+  })
+  const classicWorkspaceMarkup = buildClassicRosterPanel({
+    visibleRecords,
+    activeSelectedId,
+    today,
+    groupOptions,
+    tagOptions,
+    ultraCompactActive,
+  })
 
   app.innerHTML = `
-    <div class="app-frame" style="--frame-scale:${state.settings.scale / 100}">
+    <div class="app-frame ${state.multiSelectMode ? 'app-frame--multi-select' : ''} ${state.booting ? 'app-frame--booting' : ''} ${ultraCompactActive ? 'app-frame--ultra-compact' : ''}" style="--frame-scale:${state.settings.scale / 100}">
     <div class="crm-shell">
-      <header class="hero">
-        <div class="hero-copy">
-          <div class="brand-lockup">
-            <img class="brand-logo" src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
-            <div class="brand-lockup__text">
-              <p class="eyebrow">Roster</p>
-              <small>The friend CRM</small>
-            </div>
-          </div>
-          <h1>Your people, clearly remembered.</h1>
-          <p class="hero-summary">
-            Track the relationships that matter, keep memory attached to each person, and move through your roster with less friction.
-          </p>
-          <div class="button-row">
-            <button class="button button-primary" data-action="add-person">Add person</button>
-            <button class="button button-secondary" data-action="open-settings">Settings</button>
-            <button class="button button-secondary ${state.settings.compact ? 'button-active' : ''}" data-action="toggle-compact">
-              ${state.settings.compact ? 'Full view' : 'Compact view'}
-            </button>
-            <button class="button button-secondary ${state.settings.tabView ? 'button-active' : ''}" data-action="toggle-tab-view">
-              ${state.settings.tabView ? 'Classic CRM' : 'Tab view'}
-            </button>
-            ${state.settings.hints ? buildPowerDock() : ''}
-          </div>
-        </div>
+      ${heroMarkup}
 
-        <div class="summary-grid">
-          ${summaryTile('People tracked', activeRecords.length, 'Only your active roster lives here')}
-          ${summaryTile('Needs attention', needsAttentionCount, `${overdueCount} overdue right now`)}
-          ${summaryTile('Memories saved', memoryCount, 'Stored context for future you')}
-          ${summaryTile('Average bond', `${averageHealth}%`, 'Live relationship health across active people')}
-        </div>
-      </header>
-
-      <main class="workspace ${state.settings.tabView ? 'workspace--tab' : ''}">
-        <aside class="panel">
+      <main class="${workspaceShellClass}">
+        ${
+          showLeftRail
+            ? `
+        <aside class="panel panel--sidebar" data-onboarding-target="left-rail">
+          <div class="rail-head">
+            <span class="rail-head__label">Navigate</span>
+          </div>
           <div class="sidebar-stack">
-            ${buildSidebarSection(
+            ${featureFlags.sidebarViews ? buildSidebarSection(
               'views',
               'Views',
               'Filter the circle.',
               `Focused on ${escapeHtml(selectedRecord?.name || 'nobody yet')}`,
               `
-                <p class="sidebar-context">Focused on <strong data-live-selected-name>${escapeHtml(selectedRecord?.name || 'nobody yet')}</strong></p>
+                <p class="sidebar-context">Focused on <strong data-live-selected-name>${buildAnimatedText(selectedRecord?.name || 'nobody yet', 'sidebar-focused-record')}</strong></p>
                 <div class="filter-stack">
                   ${filterButton('all', 'All people', 'Everything in one view', activeRecords.length)}
                   ${filterButton('needs-attention', 'Needs attention', 'Overdue or due this week', needsAttentionCount)}
@@ -340,9 +707,10 @@ function render({ preserveFocus = true } = {}) {
                 </div>
               `,
               `${buildAnimatedValue(String(activeRecords.length), 'sidebar-active-count', { tag: 'span', className: 'inline-count' })} active`,
-            )}
+              { targetName: 'views-module' },
+            ) : ''}
 
-            ${buildSidebarSection(
+            ${featureFlags.sidebarTiers ? buildSidebarSection(
               'tiers',
               'Tiers',
               'Open a lane and jump to people.',
@@ -393,77 +761,23 @@ function render({ preserveFocus = true } = {}) {
                     .join('')}
                 </div>
               `,
-            )}
+              '',
+              { targetName: 'tiers-module' },
+            ) : ''}
 
-            ${buildSidebarSection(
-              'today',
-              'Today',
-              'One-click review queue.',
-              'Birthdays, reconnects, and what deserves a touch today or this week.',
-              `
-                <div class="queue-cluster">
-                  <div class="queue-cluster__head">
-                    <strong>Today</strong>
-                    <small>${todayQueue.length ? `${todayQueue.length} live item${todayQueue.length === 1 ? '' : 's'}` : 'Nothing urgent today'}</small>
-                  </div>
-                  <ul class="plain-list queue-list">
-                    ${
-                      todayQueue.length
-                        ? todayQueue
-                            .map(
-                              ({ record, reason }) => `
-                                <li>
-                                  <button class="queue-item queue-item--today" data-select="${record.id}">
-                                    <span>
-                                      <strong>${escapeHtml(record.name)}</strong>
-                                      <small>${escapeHtml(reason)}</small>
-                                    </span>
-                                    <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
-                                  </button>
-                                </li>
-                              `,
-                            )
-                            .join('')
-                        : '<li class="empty-copy">Nothing urgent today. Your circle is in good shape.</li>'
-                    }
-                  </ul>
-                </div>
-                <div class="queue-cluster">
-                  <div class="queue-cluster__head">
-                    <strong>This week</strong>
-                    <small>${thisWeekQueue.length ? `${thisWeekQueue.length} upcoming` : 'No new nudges this week'}</small>
-                  </div>
-                  <ul class="plain-list queue-list">
-                    ${
-                      thisWeekQueue.length
-                        ? thisWeekQueue
-                            .map(
-                              ({ record, reason }) => `
-                                <li>
-                                  <button class="queue-item" data-select="${record.id}">
-                                    <span>
-                                      <strong>${escapeHtml(record.name)}</strong>
-                                      <small>${escapeHtml(reason)}</small>
-                                    </span>
-                                    <i class="status-pill tone-${getAttentionState(record, today).tone}">${formatShortDate(getNextTouchDate(record))}</i>
-                                  </button>
-                                </li>
-                              `,
-                            )
-                            .join('')
-                        : '<li class="empty-copy">No additional follow-ups creeping up this week.</li>'
-                    }
-                  </ul>
-                </div>
-              `,
-              `${buildAnimatedValue(String(todayQueue.length + thisWeekQueue.length), 'today-queue-count', { tag: 'span', className: 'inline-count' })} queued`,
-            )}
+            ${(featureFlags.sidebarToday || featureFlags.sidebarQueue) ? buildTodaySidebarSection({
+              today,
+              todayQueue,
+              thisWeekQueue,
+              topQueue,
+              featureFlags,
+            }) : ''}
 
-            ${buildSidebarSection(
+            ${featureFlags.sidebarGroups ? buildSidebarSection(
               'groups',
               'Groups',
-              'Custom lanes across your roster.',
-              'Flexible collections layered on top of the core tiers.',
+              'Groups',
+              'Filter by shared lanes across your roster.',
               `
                 <div class="token-filter-grid">
                   <button class="token-filter ${state.groupFilter ? '' : 'active'}" type="button" data-filter-group="">
@@ -489,13 +803,14 @@ function render({ preserveFocus = true } = {}) {
                 </div>
               `,
               groupOptions.length ? `${groupOptions.length} groups` : '',
-            )}
+              { compactTitle: true, targetName: 'groups-module' },
+            ) : ''}
 
-            ${buildSidebarSection(
+            ${featureFlags.sidebarTags ? buildSidebarSection(
               'tags',
               'Tags',
-              'Fast cuts across shared context.',
-              'Use tags as the quick language of your relationships.',
+              'Tags',
+              'Filter by shared context, identity, and energy.',
               `
                 <div class="token-filter-grid">
                   <button class="token-filter ${state.tagFilter ? '' : 'active'}" type="button" data-filter-tag="">
@@ -521,40 +836,16 @@ function render({ preserveFocus = true } = {}) {
                 </div>
               `,
               topTagOptions.length ? `${topTagOptions.length} live` : '',
-            )}
-
-            ${buildSidebarSection(
-              'queue',
-              'Attention queue',
-              'Who to reach out to next.',
-              'Your priority list, sorted by urgency.',
-              `
-                <ul class="plain-list queue-list">
-                  ${topQueue
-                    .map((record) => {
-                      const attention = getAttentionState(record, today)
-                      return `
-                        <li>
-                          <button class="queue-item" data-select="${record.id}">
-                            <span>
-                              <strong>${escapeHtml(record.name)}</strong>
-                              <small>${tierMeta[record.tier].label}</small>
-                            </span>
-                            <i class="status-pill tone-${attention.tone}">${attention.label}</i>
-                          </button>
-                        </li>
-                      `
-                    })
-                    .join('')}
-                </ul>
-              `,
-              `${buildAnimatedValue(String(topQueue.length), 'top-queue-count', { tag: 'span', className: 'inline-count' })} shown`,
-            )}
+              { compactTitle: true, targetName: 'tags-module' },
+            ) : ''}
           </div>
         </aside>
+        `
+            : ''
+        }
 
         ${
-          state.settings.tabView
+          workspaceMode === 'tab'
             ? buildTabRosterPanel({
                 visibleRecords,
                 activeSelectedId,
@@ -562,241 +853,109 @@ function render({ preserveFocus = true } = {}) {
                 groupOptions,
                 tagOptions,
               })
-            : `
-        <section class="panel">
-          <div class="roster-header roster-header--stacked">
-            <div class="panel-heading">
-              <p class="eyebrow">Roster</p>
-              <h2>${buildAnimatedValue(String(visibleRecords.length), 'visible-records-count', { tag: 'span', className: 'inline-count animated-value--large' })} people in view</h2>
-            </div>
-
-            <div class="roster-toolbar">
-              <label class="toolbar-select toolbar-select--compact">
-                <span>Tier</span>
-                <select data-ui-filter="tier" data-focus-key="tier-filter">
-                  <option value="all" ${state.filter === 'all' ? 'selected' : ''}>All people</option>
-                  <option value="needs-attention" ${state.filter === 'needs-attention' ? 'selected' : ''}>Needs attention</option>
-                  ${tierOrder.map((tier) => `<option value="${tier}" ${state.filter === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
-                  <option value="archived" ${state.filter === 'archived' ? 'selected' : ''}>Archived</option>
-                </select>
-              </label>
-              <label class="toolbar-select">
-                <span>Group</span>
-                <select data-ui-filter="group" data-focus-key="group-filter">
-                  <option value="">All groups</option>
-                  ${groupOptions.map((group) => `<option value="${escapeAttribute(group)}" ${state.groupFilter === group ? 'selected' : ''}>${escapeHtml(group)}</option>`).join('')}
-                </select>
-              </label>
-              <label class="toolbar-select">
-                <span>Tag</span>
-                <select data-ui-filter="tag" data-focus-key="tag-filter">
-                  <option value="">All tags</option>
-                  ${tagOptions.map((tag) => `<option value="${escapeAttribute(tag)}" ${state.tagFilter === tag ? 'selected' : ''}>${escapeHtml(tag)}</option>`).join('')}
-                </select>
-              </label>
-              <label class="toolbar-select">
-                <span>Sort</span>
-                <select data-ui-filter="sort" data-focus-key="sort-mode">
-                  <option value="attention" ${state.sortMode === 'attention' ? 'selected' : ''}>Attention</option>
-                  <option value="name" ${state.sortMode === 'name' ? 'selected' : ''}>Name</option>
-                  <option value="created" ${state.sortMode === 'created' ? 'selected' : ''}>Created</option>
-                  <option value="group" ${state.sortMode === 'group' ? 'selected' : ''}>Group</option>
-                  <option value="tag" ${state.sortMode === 'tag' ? 'selected' : ''}>Tag</option>
-                </select>
-              </label>
-              <label class="toolbar-select toolbar-select--compact">
-                <span>Direction</span>
-                <select data-ui-filter="direction" data-focus-key="sort-direction">
-                  <option value="desc" ${state.sortDirection === 'desc' ? 'selected' : ''}>Newest first</option>
-                  <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
-                </select>
-              </label>
-              <button
-                class="button button-secondary toolbar-mode-button ${state.multiSelectMode ? 'button-active' : ''}"
-                type="button"
-                data-action="toggle-multi-select"
-              >
-                ${state.multiSelectMode ? 'Done selecting' : 'Select multiple'}
-              </button>
-            </div>
-          </div>
-
-          ${
-            state.selectedIds.length
-              ? `
-                <div class="bulk-bar">
-                  <div class="bulk-bar__copy">
-                    <p class="eyebrow">Bulk actions</p>
-                    <strong>${buildAnimatedValue(String(state.selectedIds.length), 'bulk-count', { tag: 'span', className: 'inline-count' })} selected</strong>
-                  </div>
-                  <div class="bulk-bar__actions">
-                    <button class="button button-secondary" type="button" data-action="bulk-mark-touched">Mark touched</button>
-                    <button class="button button-secondary" type="button" data-action="bulk-archive">Archive</button>
-                    <button class="button button-secondary" type="button" data-action="bulk-restore">Restore</button>
-                    <button class="button button-secondary" type="button" data-action="clear-selection">Clear</button>
-                  </div>
-                </div>
-              `
-              : ''
-          }
-
-          <label class="search-field">
-            <span class="search-label">Search by name, notes, memory, tag, group, or socials</span>
-            <div class="search-shell">
-              <input
-                data-search
-                data-focus-key="search"
-                id="search-input"
-                type="search"
-                placeholder="Search your people"
-                value="${escapeAttribute(state.query)}"
-              />
-              ${
-                state.query
-                  ? '<button class="search-action" data-action="clear-search" aria-label="Clear search">Clear</button>'
-                  : ''
-              }
-            </div>
-          </label>
-
-          ${
-            visibleRecords.length
-              ? `
-                <div class="record-list-shell" data-selection-shell>
-                  <div class="selection-rail" data-selection-rail></div>
-                  <ul class="plain-list record-list record-list--animated ${state.settings.compact ? 'record-list--compact' : ''}">
-                    ${visibleRecords
-                      .map((record) => {
-                      const attention = getAttentionState(record, today)
-                      const isSelected = activeSelectedId === record.id
-                      const isBulkSelected = state.selectedIds.includes(record.id)
-                      const latestMemory = record.memories[0]
-                      const nextTouch = getNextTouchDate(record)
-                      return `
-                        <li>
-                          <button class="record-card ${isSelected ? 'selected' : ''}" data-select="${record.id}">
-                            <div class="record-top">
-                              <div class="record-person">
-                                ${
-                                  state.multiSelectMode
-                                    ? `
-                                      <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
-                                        <span></span>
-                                      </span>
-                                    `
-                                    : ''
-                                }
-                                ${buildRecordAvatar(record, 'small')}
-                                <div>
-                                  <p class="record-tier">${tierMeta[record.tier].label}</p>
-                                  <h3>${escapeHtml(record.name)}</h3>
-                                </div>
-                              </div>
-                              <i class="status-pill tone-${attention.tone}">${attention.label}</i>
-                            </div>
-
-                            ${
-                              state.settings.compact
-                                ? `
-                                  <div class="compact-inline compact-inline--minimal">
-                                    <strong>${formatShortDate(nextTouch)}</strong>
-                                    <span>${formatReconnectTiming(attention.daysUntil)}</span>
-                                  </div>
-                                `
-                                : `
-                                  <p class="record-focus">${escapeHtml(record.focus || 'No focus note added yet.')}</p>
-
-                                  <div class="record-meta">
-                                    <span>${escapeHtml(record.city || 'No city set')}</span>
-                                    <span>Added ${formatShortDate(record.createdAt)}</span>
-                                    <span>Last ${formatShortDate(record.lastContact)}</span>
-                                    <span>Next ${formatShortDate(nextTouch)}</span>
-                                    <span>${record.touchStyle}</span>
-                                    <span>${record.memories.length} memories</span>
-                                  </div>
-
-                                  ${
-                                    record.groups.length
-                                      ? `<div class="group-row">${record.groups.map((group) => `<span class="tag group-tag">${escapeHtml(group)}</span>`).join('')}</div>`
-                                      : ''
-                                  }
-
-                                  <div class="tag-row">
-                                    ${
-                                      record.tags.length
-                                        ? record.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
-                                        : '<span class="tag ghost">No tags yet</span>'
-                                    }
-                                  </div>
-
-                                  ${
-                                    latestMemory
-                                      ? `
-                                        <div class="mini-memory-row">
-                                          <span class="mini-memory">Latest memory · ${formatShortDate(latestMemory.date)}</span>
-                                          <span class="mini-memory">${escapeHtml(truncate(latestMemory.text, 88))}</span>
-                                        </div>
-                                      `
-                                      : ''
-                                  }
-                                `
-                            }
-                          </button>
-                        </li>
-                      `
-                      })
-                      .join('')}
-                  </ul>
-                </div>
-              `
-              : `
-                <div class="empty-state">
-                  <p class="eyebrow">No matches</p>
-                  <h3>Nothing fits this view yet.</h3>
-                  <p class="empty-copy">Try another filter, group, tag, or search term.</p>
-                </div>
-              `
-          }
-        </section>
-        `
+            : workspaceMode === 'map'
+              ? buildMapRosterPanel({
+                  visibleRecords,
+                  activeSelectedId,
+                  today,
+                  groupOptions,
+                  tagOptions,
+                })
+              : workspaceMode === 'relationships'
+                ? buildRelationshipsPanel({
+                    visibleRecords,
+                    activeSelectedId,
+                    today,
+                    groupOptions,
+                    tagOptions,
+                  })
+              : workspaceMode === 'timeline'
+                ? buildTimelinePanel({
+                    visibleRecords,
+                    activeSelectedId,
+                    today,
+                    groupOptions,
+                    tagOptions,
+                  })
+            : classicWorkspaceMarkup
         }
 
-        ${state.settings.tabView ? '' : `<aside class="panel inspector">
+        ${showRightRail ? `<aside class="panel inspector panel--inspector">
           ${buildInspectorPanel(selectedRecord, today)}
-        </aside>`}
+        </aside>` : ''}
       </main>
+    </div>
     </div>
 
     ${buildSettingsPanel(duplicateGroups)}
     ${buildProfilePanel(selectedRecord, today)}
     ${buildMeetingBriefPanel(selectedRecord, today)}
     ${buildQuickCapturePanel(selectedRecord)}
+    ${buildOrbitPanel(selectedRecord)}
+    ${buildCommandPalettePanel(selectedRecord)}
+    ${buildBulkEditorPanel()}
+    ${buildOnboardingPanel()}
+    ${buildBootSplash()}
     ${buildMobileQuickBar(selectedRecord)}
+    ${buildCursorChrome()}
     <input id="memory-import-input" type="file" accept=".json,application/json" hidden />
     <input id="csv-import-input" type="file" accept=".csv,text/csv" hidden />
     <input id="activity-import-input" type="file" accept=".csv,.ics,.txt,text/csv,text/calendar,text/plain" hidden />
     <input id="avatar-input" type="file" accept="image/*" hidden />
-    </div>
   `
 
   if (focusSnapshot) {
     restoreFocus(focusSnapshot)
   }
 
+  initCustomCursor()
+
   window.requestAnimationFrame(() => {
     positionSelectionRail({ animate: false })
+    positionOnboardingSpotlight()
+    if (state.commandPaletteOpen) {
+      const activePaletteItem = app.querySelector('.command-palette-item.is-active')
+      if (activePaletteItem instanceof HTMLElement) {
+        activePaletteItem.scrollIntoView({ block: 'nearest' })
+      }
+    }
+    syncInteractiveMap()
   })
 }
 
-function buildCollapsibleSection({ scope, key, eyebrow, title, summary = '', badge = '', content = '', open = true, className = '' }) {
+function buildCollapsibleSection({
+  scope,
+  key,
+  eyebrow,
+  title,
+  summary = '',
+  badge = '',
+  content = '',
+  open = true,
+  className = '',
+  headerContent = '',
+  headerClass = '',
+  targetName = '',
+  toggleBehavior = '',
+}) {
   return `
-    <section class="collapsible-section collapsible-section--${scope} ${open ? 'is-open' : 'is-closed'} ${className}">
-      <button class="collapsible-toggle" type="button" data-toggle-panel="${scope}:${key}" aria-expanded="${open ? 'true' : 'false'}">
-        <span class="collapsible-toggle__copy">
-          ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
-          <strong>${title}</strong>
-          ${summary ? `<small>${summary}</small>` : ''}
-        </span>
+    <section class="collapsible-section collapsible-section--${scope} ${open ? 'is-open' : 'is-closed'} ${className}" ${targetName ? `data-onboarding-target="${escapeAttribute(targetName)}"` : ''}>
+      <button class="collapsible-toggle ${headerClass}" type="button" data-toggle-panel="${scope}:${key}" ${toggleBehavior ? `data-toggle-behavior="${escapeAttribute(toggleBehavior)}"` : ''} aria-expanded="${open ? 'true' : 'false'}">
+        ${
+          headerContent
+            ? `
+              <span class="collapsible-toggle__custom">
+                ${headerContent}
+              </span>
+            `
+            : `
+              <span class="collapsible-toggle__copy">
+                ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+                <strong>${title}</strong>
+                ${summary ? `<small>${summary}</small>` : ''}
+              </span>
+            `
+        }
         <span class="collapsible-toggle__meta">
           ${badge || ''}
           <i class="collapsible-chevron" aria-hidden="true"></i>
@@ -811,11 +970,91 @@ function buildCollapsibleSection({ scope, key, eyebrow, title, summary = '', bad
   `
 }
 
-function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') {
+function buildStaticSection({ scope, className = '', headerContent = '', content = '', targetName = '' }) {
+  return `
+    <section class="collapsible-section collapsible-section--${scope} is-open ${className}" ${targetName ? `data-onboarding-target="${escapeAttribute(targetName)}"` : ''}>
+      <div class="collapsible-toggle collapsible-toggle--static">
+        <span class="collapsible-toggle__custom">
+          ${headerContent}
+        </span>
+      </div>
+      <div class="collapsible-body">
+        <div class="collapsible-body__inner">
+          ${content}
+        </div>
+      </div>
+    </section>
+  `
+}
+
+function positionOnboardingSpotlight() {
+  if (!state.onboardingOpen || !app) {
+    return
+  }
+
+  const overlay = app.querySelector('.onboarding-overlay')
+  const panel = overlay?.querySelector('.onboarding-panel')
+  if (!(overlay instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+    return
+  }
+
+  const token = overlay.dataset.onboardingStep
+  if (!token) {
+    panel.style.left = '50%'
+    panel.style.top = '50%'
+    panel.style.transform = 'translate(-50%, -50%)'
+    return
+  }
+
+  const target = app.querySelector(`[data-onboarding-target="${token}"]`)
+  if (!(target instanceof HTMLElement)) {
+    panel.style.left = '50%'
+    panel.style.top = '50%'
+    panel.style.transform = 'translate(-50%, -50%)'
+    return
+  }
+
+  const rect = target.getBoundingClientRect()
+  overlay.style.setProperty('--spotlight-left', `${Math.max(rect.left - 10, 12)}px`)
+  overlay.style.setProperty('--spotlight-top', `${Math.max(rect.top - 10, 12)}px`)
+  overlay.style.setProperty('--spotlight-width', `${Math.max(rect.width + 20, 88)}px`)
+  overlay.style.setProperty('--spotlight-height', `${Math.max(rect.height + 20, 56)}px`)
+
+  const placement = overlay.dataset.placement || 'center'
+  const panelRect = panel.getBoundingClientRect()
+  let left = window.innerWidth / 2 - panelRect.width / 2
+  let top = window.innerHeight / 2 - panelRect.height / 2
+
+  if (placement === 'right') {
+    left = rect.right + 20
+    top = rect.top + rect.height / 2 - panelRect.height / 2
+  } else if (placement === 'left') {
+    left = rect.left - panelRect.width - 20
+    top = rect.top + rect.height / 2 - panelRect.height / 2
+  } else if (placement === 'top') {
+    left = rect.left + rect.width / 2 - panelRect.width / 2
+    top = rect.top - panelRect.height - 20
+  } else if (placement === 'bottom-left') {
+    left = rect.left
+    top = rect.bottom + 18
+  } else if (placement === 'bottom') {
+    left = rect.left + rect.width / 2 - panelRect.width / 2
+    top = rect.bottom + 18
+  }
+
+  left = clamp(left, 16, window.innerWidth - panelRect.width - 16)
+  top = clamp(top, 16, window.innerHeight - panelRect.height - 16)
+
+  panel.style.left = `${left}px`
+  panel.style.top = `${top}px`
+  panel.style.transform = 'translate(0, 0)'
+}
+
+function buildSidebarSection(key, eyebrow, title, summary, content, badge = '', options = {}) {
   const open = state.sidebarPanels[key] !== false
 
   return `
-    <section class="sidebar-section ${open ? 'is-open' : 'is-closed'}">
+    <section class="sidebar-section ${open ? 'is-open' : 'is-closed'} ${options.compactTitle ? 'sidebar-section--compact' : ''}" ${options.targetName ? `data-onboarding-target="${escapeAttribute(options.targetName)}"` : ''}>
       <button
         class="sidebar-summary-card"
         type="button"
@@ -833,11 +1072,8 @@ function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') 
               `
               : ''
           }
-          <strong>${title}</strong>
+          <strong class="${options.compactTitle ? 'sidebar-title sidebar-title--compact' : 'sidebar-title'}">${title}</strong>
           ${summary ? `<small>${summary}</small>` : ''}
-        </span>
-        <span class="sidebar-summary-card__meta">
-          <i class="sidebar-summary-card__chevron" aria-hidden="true"></i>
         </span>
       </button>
       <div class="sidebar-section__body">
@@ -849,175 +1085,293 @@ function buildSidebarSection(key, eyebrow, title, summary, content, badge = '') 
   `
 }
 
-function buildTabRosterPanel({ visibleRecords, activeSelectedId, today, groupOptions, tagOptions }) {
-  const activeRecords = state.records.filter((record) => !record.archived)
-  const viewTitle = getViewTitle(state.filter)
+function buildTodaySidebarSection({ today, todayQueue, thisWeekQueue, topQueue, featureFlags }) {
+  const availableModes = []
+  if (featureFlags.sidebarToday) {
+    availableModes.push('today')
+  }
+  if (featureFlags.sidebarQueue) {
+    availableModes.push('queue')
+  }
 
-  return `
-    <section class="panel panel--tab-roster">
-      <div class="tab-roster-head">
-        <div class="tab-roster-topbar">
-          <label class="search-field search-field--tab">
-            <div class="search-shell">
-              <input
-                data-search
-                data-focus-key="search"
-                id="search-input"
-                type="search"
-                placeholder="Search contacts..."
-                value="${escapeAttribute(state.query)}"
-              />
-              ${
-                state.query
-                  ? '<button class="search-action" data-action="clear-search" aria-label="Clear search">Clear</button>'
-                  : ''
-              }
-            </div>
-          </label>
+  const activeMode = availableModes.includes(state.todayPanelMode) ? state.todayPanelMode : availableModes[0] || 'today'
+  const tomorrowQueue = thisWeekQueue.filter(({ record, reason }) => {
+    const attention = getAttentionState(record, today)
+    const birthday = getBirthdayState(record, today)
+    return attention.daysUntil === 1 || birthday?.daysUntil === 1 || /tomorrow/i.test(reason)
+  })
+  const laterThisWeekQueue = thisWeekQueue.filter(({ record, reason }) => {
+    const attention = getAttentionState(record, today)
+    const birthday = getBirthdayState(record, today)
+    return !(attention.daysUntil === 1 || birthday?.daysUntil === 1 || /tomorrow/i.test(reason))
+  })
 
-          <div class="tab-roster-controls">
-            <label class="toolbar-select toolbar-select--tab">
-              <span>Sort</span>
-              <select data-ui-filter="sort" data-focus-key="sort-mode">
-                <option value="attention" ${state.sortMode === 'attention' ? 'selected' : ''}>Attention</option>
-                <option value="name" ${state.sortMode === 'name' ? 'selected' : ''}>Name</option>
-                <option value="created" ${state.sortMode === 'created' ? 'selected' : ''}>Created</option>
-                <option value="group" ${state.sortMode === 'group' ? 'selected' : ''}>Group</option>
-                <option value="tag" ${state.sortMode === 'tag' ? 'selected' : ''}>Tag</option>
-              </select>
-            </label>
-            <label class="toolbar-select toolbar-select--tab">
-              <span>Direction</span>
-              <select data-ui-filter="direction" data-focus-key="sort-direction">
-                <option value="desc" ${state.sortDirection === 'desc' ? 'selected' : ''}>Newest first</option>
-                <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
-              </select>
-            </label>
-            <button
-              class="button button-secondary toolbar-mode-button ${state.multiSelectMode ? 'button-active' : ''}"
-              type="button"
-              data-action="toggle-multi-select"
-            >
-              ${state.multiSelectMode ? 'Done' : 'Select'}
-            </button>
+  const badge = activeMode === 'queue'
+    ? `${buildAnimatedValue(String(topQueue.length), 'today-panel-queue-count', { tag: 'span', className: 'inline-count' })} shown`
+    : `${buildAnimatedValue(String(todayQueue.length + thisWeekQueue.length), 'today-panel-today-count', { tag: 'span', className: 'inline-count' })} queued`
+
+  const content = activeMode === 'queue'
+    ? `
+        ${availableModes.length > 1 ? buildTodayModeToggle(activeMode) : ''}
+        <div class="today-mode-stage today-mode-stage--queue" data-today-mode-stage="${activeMode}">
+        <div class="queue-cluster queue-cluster--stacked">
+          <div class="queue-divider">
+            <strong>Attention queue</strong>
+            <small>Your priority list, sorted by urgency.</small>
           </div>
+          <ul class="plain-list queue-list">
+            ${topQueue.length
+              ? topQueue
+                  .map((record) => {
+                    const attention = getAttentionState(record, today)
+                    return `
+                      <li>
+                        <button class="queue-item queue-item--priority" data-select="${record.id}">
+                          <span>
+                            <strong>${escapeHtml(record.name)}</strong>
+                            <small>${tierMeta[record.tier].label}</small>
+                          </span>
+                          <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                        </button>
+                      </li>
+                    `
+                  })
+                  .join('')
+              : '<li class="empty-copy">No priority nudges right now.</li>'}
+          </ul>
         </div>
+        </div>
+      `
+    : `
+        ${availableModes.length > 1 ? buildTodayModeToggle(activeMode) : ''}
+        <div class="today-mode-stage today-mode-stage--today" data-today-mode-stage="${activeMode}">
+        ${buildTodayQueueSection('Today', todayQueue.length ? `${todayQueue.length} live item${todayQueue.length === 1 ? '' : 's'}` : 'Nothing urgent today', todayQueue, today, 'today')}
+        ${buildTodayQueueSection('Tomorrow', tomorrowQueue.length ? `${tomorrowQueue.length} coming up` : 'No tomorrow nudges', tomorrowQueue, today, 'tomorrow')}
+        ${buildTodayQueueSection('This week', laterThisWeekQueue.length ? `${laterThisWeekQueue.length} upcoming` : 'No additional follow-ups this week', laterThisWeekQueue, today, 'week')}
+        </div>
+      `
 
-        <div class="tab-roster-subbar">
-          <div class="tab-roster-title">
-            <h2>${escapeHtml(viewTitle)}</h2>
-            <small>${buildAnimatedValue(String(visibleRecords.length), 'tab-visible-records-count', { tag: 'span', className: 'inline-count' })} people</small>
+  return buildSidebarSection(
+    'today',
+    'Today',
+    'Who to reach out to next.',
+    'Birthdays, reconnects, and what deserves a touch today or this week.',
+    content,
+    badge,
+    { targetName: 'today-module' },
+  )
+}
+
+function buildTodayModeToggle(activeMode) {
+  return `
+    <div class="queue-mode-toggle" role="tablist" aria-label="Today sidebar mode">
+      <button class="queue-mode-toggle__button ${activeMode === 'today' ? 'active' : ''}" type="button" role="tab" aria-selected="${activeMode === 'today' ? 'true' : 'false'}" data-action="set-today-panel-mode" data-today-panel-mode="today">Today</button>
+      <button class="queue-mode-toggle__button ${activeMode === 'queue' ? 'active' : ''}" type="button" role="tab" aria-selected="${activeMode === 'queue' ? 'true' : 'false'}" data-action="set-today-panel-mode" data-today-panel-mode="queue">Attention queue</button>
+    </div>
+  `
+}
+
+function buildTodayQueueSection(title, subtitle, items, today, tone = 'today') {
+  return `
+    <div class="queue-cluster queue-cluster--stacked">
+      <div class="queue-divider queue-divider--${tone}">
+        <strong>${title}</strong>
+        <small>${subtitle}</small>
+      </div>
+      <ul class="plain-list queue-list">
+        ${
+          items.length
+            ? items
+                .map(
+                  ({ record, reason }) => `
+                    <li>
+                      <button class="queue-item queue-item--today" data-select="${record.id}">
+                        <span>
+                          <strong>${escapeHtml(record.name)}</strong>
+                          <small>${escapeHtml(reason)}</small>
+                        </span>
+                        <i class="status-pill tone-${getAttentionState(record, today).tone}">${getAttentionState(record, today).label}</i>
+                      </button>
+                    </li>
+                  `,
+                )
+                .join('')
+            : '<li class="empty-copy">Nothing here right now.</li>'
+        }
+      </ul>
+    </div>
+  `
+}
+
+function buildWorkspaceModeButton(mode, label, activeMode) {
+  return `
+    <button
+      class="button button-secondary mode-switcher__button ${activeMode === mode ? 'button-active' : ''}"
+      type="button"
+      role="tab"
+      aria-selected="${activeMode === mode ? 'true' : 'false'}"
+      data-action="set-workspace-mode"
+      data-workspace-mode="${mode}"
+    >
+      ${label}
+    </button>
+  `
+}
+
+function keyHintAttrs(keys) {
+  return state.settings.hints ? `data-kbd="${escapeAttribute(keys)}"` : ''
+}
+
+function buildAlternateViewToolbar(viewTitle, visibleCount, groupOptions, tagOptions, today) {
+  const workspaceMode = getWorkspaceMode()
+  return `
+    <div class="tab-roster-head">
+      <div class="tab-roster-topbar">
+        <label class="search-field search-field--tab">
+          <div class="search-shell">
+            <input
+              data-search
+              data-focus-key="search"
+              id="search-input"
+              type="search"
+              placeholder="Search contacts..."
+              value="${escapeAttribute(state.query)}"
+              ${keyHintAttrs('/')}
+            />
+            ${
+              state.query
+                ? '<button class="search-action" data-action="clear-search" aria-label="Clear search">Clear</button>'
+                : ''
+            }
           </div>
-          <div class="tab-roster-filters">
-            <label class="toolbar-select toolbar-select--tab">
-              <span>Tier</span>
-              <select data-ui-filter="tier" data-focus-key="tier-filter">
-                <option value="all" ${state.filter === 'all' ? 'selected' : ''}>All people</option>
-                <option value="needs-attention" ${state.filter === 'needs-attention' ? 'selected' : ''}>Needs attention</option>
-                ${tierOrder.map((tier) => `<option value="${tier}" ${state.filter === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
-                <option value="archived" ${state.filter === 'archived' ? 'selected' : ''}>Archived</option>
-              </select>
-            </label>
-            <label class="toolbar-select toolbar-select--tab">
-              <span>Group</span>
-              <select data-ui-filter="group" data-focus-key="group-filter">
-                <option value="">All groups</option>
-                ${groupOptions.map((group) => `<option value="${escapeAttribute(group)}" ${state.groupFilter === group ? 'selected' : ''}>${escapeHtml(group)}</option>`).join('')}
-              </select>
-            </label>
-            <label class="toolbar-select toolbar-select--tab">
-              <span>Tag</span>
-              <select data-ui-filter="tag" data-focus-key="tag-filter">
-                <option value="">All tags</option>
-                ${tagOptions.map((tag) => `<option value="${escapeAttribute(tag)}" ${state.tagFilter === tag ? 'selected' : ''}>${escapeHtml(tag)}</option>`).join('')}
-              </select>
-            </label>
-          </div>
+        </label>
+
+        <div class="tab-roster-controls">
+          ${
+            workspaceMode === 'tab'
+              ? `
+                <div class="tab-layout-toggle">
+                  <button class="button button-secondary button-small ${state.settings.tabLayout === 'cards' ? 'button-active' : ''}" type="button" data-action="set-tab-layout" data-tab-layout="cards">Cards</button>
+                  <button class="button button-secondary button-small ${state.settings.tabLayout === 'kanban' ? 'button-active' : ''}" type="button" data-action="set-tab-layout" data-tab-layout="kanban">Kanban</button>
+                </div>
+              `
+              : ''
+          }
+          <label class="toolbar-select toolbar-select--tab">
+            <span>Sort</span>
+            <select data-ui-filter="sort" data-focus-key="sort-mode">
+              <option value="attention" ${state.sortMode === 'attention' ? 'selected' : ''}>Attention</option>
+              <option value="name" ${state.sortMode === 'name' ? 'selected' : ''}>Name</option>
+              <option value="created" ${state.sortMode === 'created' ? 'selected' : ''}>Created</option>
+              <option value="group" ${state.sortMode === 'group' ? 'selected' : ''}>Group</option>
+              <option value="tag" ${state.sortMode === 'tag' ? 'selected' : ''}>Tag</option>
+            </select>
+          </label>
+          <label class="toolbar-select toolbar-select--tab">
+            <span>Direction</span>
+            <select data-ui-filter="direction" data-focus-key="sort-direction">
+              <option value="desc" ${state.sortDirection === 'desc' ? 'selected' : ''}>Newest first</option>
+              <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
+            </select>
+          </label>
+          <button
+            class="button button-secondary toolbar-mode-button ${state.multiSelectMode ? 'button-active' : ''}"
+            type="button"
+            data-action="toggle-multi-select"
+            data-onboarding-target="bulk-actions"
+            ${keyHintAttrs('S')}
+          >
+            ${state.multiSelectMode ? 'Done' : 'Select'}
+          </button>
         </div>
       </div>
 
-      ${
-        state.selectedIds.length
-          ? `
+      <div class="tab-roster-subbar">
+        <div class="tab-roster-title">
+          <h2>${buildAnimatedText(viewTitle, `view-title-${getWorkspaceMode()}`)}</h2>
+          <small>${buildAnimatedValue(String(visibleCount), `${slugify(viewTitle)}-visible-records-count`, { tag: 'span', className: 'inline-count' })} people</small>
+          <p class="roster-filter-context roster-filter-context--subtle">
+            <span>Tier</span>
+            ${buildAnimatedText(filterLabel(state.filter), `alt-filter-label-${getWorkspaceMode()}`)}
+            <span>Group</span>
+            ${buildAnimatedText(state.groupFilter || 'All groups', `alt-group-label-${getWorkspaceMode()}`)}
+            <span>Tag</span>
+            ${buildAnimatedText(state.tagFilter || 'All tags', `alt-tag-label-${getWorkspaceMode()}`)}
+          </p>
+        </div>
+        <div class="tab-roster-filters">
+          <label class="toolbar-select toolbar-select--tab">
+            <span>Tier</span>
+            <select data-ui-filter="tier" data-focus-key="tier-filter">
+              <option value="all" ${state.filter === 'all' ? 'selected' : ''}>All people</option>
+              <option value="needs-attention" ${state.filter === 'needs-attention' ? 'selected' : ''}>Needs attention</option>
+              ${tierOrder.map((tier) => `<option value="${tier}" ${state.filter === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
+              <option value="archived" ${state.filter === 'archived' ? 'selected' : ''}>Archived</option>
+            </select>
+          </label>
+          <label class="toolbar-select toolbar-select--tab">
+            <span>Group</span>
+            <select data-ui-filter="group" data-focus-key="group-filter">
+              <option value="">All groups</option>
+              ${groupOptions.map((group) => `<option value="${escapeAttribute(group)}" ${state.groupFilter === group ? 'selected' : ''}>${escapeHtml(group)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="toolbar-select toolbar-select--tab">
+            <span>Tag</span>
+            <select data-ui-filter="tag" data-focus-key="tag-filter">
+              <option value="">All tags</option>
+              ${tagOptions.map((tag) => `<option value="${escapeAttribute(tag)}" ${state.tagFilter === tag ? 'selected' : ''}>${escapeHtml(tag)}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+    ${
+      state.selectedIds.length
+        ? `
             <div class="bulk-bar bulk-bar--tab">
               <div class="bulk-bar__copy">
                 <p class="eyebrow">Bulk actions</p>
-                <strong>${buildAnimatedValue(String(state.selectedIds.length), 'bulk-count-tab', { tag: 'span', className: 'inline-count' })} selected</strong>
+                <strong>${buildAnimatedValue(String(state.selectedIds.length), `bulk-count-${slugify(viewTitle)}`, { tag: 'span', className: 'inline-count' })} selected</strong>
               </div>
               <div class="bulk-bar__actions">
                 <button class="button button-secondary" type="button" data-action="bulk-mark-touched">Mark touched</button>
+                <button class="button button-secondary" type="button" data-action="bulk-add-tag">Add tag</button>
+                <button class="button button-secondary" type="button" data-action="bulk-remove-tag">Remove tag</button>
+                <button class="button button-secondary" type="button" data-action="bulk-add-group">Add group</button>
+                <button class="button button-secondary" type="button" data-action="bulk-remove-group">Remove group</button>
+                <button class="button button-secondary" type="button" data-action="bulk-mass-editor">Mass editor</button>
                 <button class="button button-secondary" type="button" data-action="bulk-archive">Archive</button>
                 <button class="button button-secondary" type="button" data-action="bulk-restore">Restore</button>
                 <button class="button button-secondary" type="button" data-action="clear-selection">Clear</button>
               </div>
             </div>
-          `
-          : ''
-      }
+        `
+        : ''
+    }
+  `
+}
+
+function buildTabRosterPanel({ visibleRecords, activeSelectedId, today, groupOptions, tagOptions }) {
+  const viewTitle = getViewTitle(state.filter)
+  const tabLayout = state.settings.tabLayout || 'cards'
+
+  return `
+    <section class="panel panel--tab-roster">
+      ${buildAlternateViewToolbar(viewTitle, visibleRecords.length, groupOptions, tagOptions, today)}
 
       ${
         visibleRecords.length
           ? `
-            <div class="tab-card-grid">
-              ${visibleRecords
-                .map((record) => {
-                  const attention = getAttentionState(record, today)
-                  const isSelected = activeSelectedId === record.id
-                  const isBulkSelected = state.selectedIds.includes(record.id)
-                  const nextTouch = getNextTouchDate(record)
-                  const lastTouchAgo = differenceInDays(record.lastContact, today)
-                  const previewTags = record.tags.slice(0, 2)
-                  const extraTags = Math.max(0, record.tags.length - previewTags.length)
-                  const metaLine = [record.contact.company, record.city || record.touchStyle].filter(Boolean).join(' · ')
-
-                  return `
-                    <button class="tab-contact-card tone-${attention.tone} ${isSelected ? 'selected' : ''}" data-select="${record.id}">
-                      <div class="tab-contact-card__top">
-                        <div class="tab-contact-card__identity">
-                          ${
-                            state.multiSelectMode
-                              ? `
-                                <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
-                                  <span></span>
-                                </span>
-                              `
-                              : ''
-                          }
-                          ${buildRecordAvatar(record, 'small')}
-                          <div class="tab-contact-card__copy">
-                            <strong>${escapeHtml(record.name)}</strong>
-                            <small>${escapeHtml(metaLine || tierMeta[record.tier].label)}</small>
-                          </div>
-                        </div>
-                        <span class="tab-bond">${record.bondHealth}%</span>
-                      </div>
-
-                      <div class="tab-contact-card__status">
-                        <span class="tab-status-dot tone-${attention.tone}"></span>
-                        <span>${lastTouchAgo <= 0 ? 'Touched today' : `${lastTouchAgo}d ago`}</span>
-                      </div>
-
-                      <div class="tab-contact-card__schedule">
-                        <strong>${formatShortDate(nextTouch)}</strong>
-                        <small>${formatReconnectTiming(attention.daysUntil)}</small>
-                      </div>
-
-                      <div class="tab-contact-card__footer">
-                        <div class="tab-card-tags">
-                          ${
-                            previewTags.length
-                              ? previewTags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
-                              : '<span class="tag ghost">untagged</span>'
-                          }
-                          ${extraTags ? `<span class="tab-card-more">+${extraTags}</span>` : ''}
-                        </div>
-                        <i class="status-pill tone-${attention.tone}">${attention.label}</i>
-                      </div>
-                    </button>
+            ${
+              tabLayout === 'kanban'
+                ? buildTabKanbanBoard(visibleRecords, activeSelectedId, today)
+                : `
+                    <div class="tab-card-grid">
+                      ${visibleRecords.map((record) => buildTabContactCard(record, activeSelectedId, today)).join('')}
+                    </div>
                   `
-                })
-                .join('')}
-            </div>
+            }
           `
           : `
             <div class="empty-state">
@@ -1027,6 +1381,546 @@ function buildTabRosterPanel({ visibleRecords, activeSelectedId, today, groupOpt
             </div>
           `
       }
+    </section>
+  `
+}
+
+function buildTabContactCard(record, activeSelectedId, today) {
+  const attention = getAttentionState(record, today)
+  const isSelected = activeSelectedId === record.id
+  const isBulkSelected = state.selectedIds.includes(record.id)
+  const nextTouch = getNextTouchDate(record)
+  const lastTouchAgo = differenceInDays(record.lastContact, today)
+  const previewTags = record.tags.slice(0, 2)
+  const extraTags = Math.max(0, record.tags.length - previewTags.length)
+  const metaLine = [record.contact.company, record.city || record.touchStyle].filter(Boolean).join(' · ')
+
+  return `
+    <button class="tab-contact-card tone-${attention.tone} ${isSelected ? 'selected' : ''} ${state.settings.compact ? 'tab-contact-card--compact' : ''}" data-select="${record.id}" data-open-profile-select="true">
+      <div class="tab-contact-card__top">
+        <div class="tab-contact-card__identity">
+          ${
+            state.multiSelectMode
+              ? `
+                <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                  <span></span>
+                </span>
+              `
+              : ''
+          }
+          ${buildRecordAvatar(record, 'small')}
+          <div class="tab-contact-card__copy">
+            <strong>${escapeHtml(record.name)}</strong>
+            <small>${escapeHtml(metaLine || tierMeta[record.tier].label)}</small>
+          </div>
+        </div>
+        <span class="tab-bond">${record.bondHealth}%</span>
+      </div>
+
+      <div class="tab-contact-card__status">
+        <span class="tab-status-dot tone-${attention.tone}"></span>
+        <span>${lastTouchAgo <= 0 ? 'Touched today' : `${lastTouchAgo}d ago`}</span>
+      </div>
+
+      <div class="tab-contact-card__schedule">
+        <strong>${formatShortDate(nextTouch)}</strong>
+        <small>${formatReconnectTiming(attention.daysUntil)}</small>
+      </div>
+
+      ${
+        state.settings.compact
+          ? ''
+          : `
+            <div class="tab-contact-card__footer">
+              <div class="tab-card-tags">
+                ${
+                  previewTags.length
+                    ? previewTags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+                    : '<span class="tag ghost">untagged</span>'
+                }
+                ${extraTags ? `<span class="tab-card-more">+${extraTags}</span>` : ''}
+              </div>
+              <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+            </div>
+          `
+      }
+    </button>
+  `
+}
+
+function buildTabKanbanBoard(visibleRecords, activeSelectedId, today) {
+  const columns = [
+    { key: 'overdue', label: 'Overdue', matcher: (attention) => attention.tone === 'overdue' },
+    { key: 'soon', label: 'Soon', matcher: (attention) => attention.tone === 'soon' },
+    { key: 'steady', label: 'On track', matcher: (attention) => attention.tone === 'steady' },
+  ]
+
+  return `
+    <div class="kanban-board">
+      ${columns
+        .map((column) => {
+          const records = visibleRecords.filter((record) => column.matcher(getAttentionState(record, today)))
+          return `
+            <section class="kanban-column">
+              <header class="kanban-column__header">
+                <div>
+                  <p class="eyebrow">${column.label}</p>
+                  <strong>${records.length} ${records.length === 1 ? 'person' : 'people'}</strong>
+                </div>
+              </header>
+              <div class="kanban-column__list">
+                ${
+                  records.length
+                    ? records.map((record) => buildTabContactCard(record, activeSelectedId, today)).join('')
+                    : '<div class="kanban-empty">No one here right now.</div>'
+                }
+              </div>
+            </section>
+          `
+        })
+        .join('')}
+    </div>
+  `
+}
+
+function buildMapRosterPanel({ visibleRecords, activeSelectedId, today, groupOptions, tagOptions }) {
+  const cityGroups = getCityGroups(visibleRecords, today)
+  const mappedGroups = cityGroups.filter((group) => group.coordinates)
+  const unmappedGroups = cityGroups.filter((group) => !group.coordinates)
+
+  return `
+    <section class="panel panel--tab-roster panel--map-roster">
+      ${buildAlternateViewToolbar('Map view', visibleRecords.length, groupOptions, tagOptions, today)}
+
+      ${
+        visibleRecords.length
+          ? `
+            <div class="map-view-shell">
+              <div class="map-surface-card">
+                <div class="map-surface-toolbar">
+                  <div>
+                    <p class="eyebrow">Live map</p>
+                    <strong>Pan, zoom, and switch to satellite.</strong>
+                  </div>
+                  <div class="map-surface-actions">
+                    <button class="button button-secondary button-small ${state.settings.mapLayer === 'dark' ? 'button-active' : ''}" type="button" data-action="set-map-layer" data-map-layer="dark">Dark</button>
+                    <button class="button button-secondary button-small ${state.settings.mapLayer === 'satellite' ? 'button-active' : ''}" type="button" data-action="set-map-layer" data-map-layer="satellite">Satellite</button>
+                    <button class="button button-secondary button-small" type="button" data-action="fit-map">Fit people</button>
+                  </div>
+                </div>
+                <div class="live-map" id="live-map" data-map-canvas></div>
+                ${
+                  unmappedGroups.length
+                    ? `<p class="map-hint">Using city, country, or building names works here. Unmapped right now: ${escapeHtml(unmappedGroups.map((group) => group.city).join(', '))}</p>`
+                    : '<p class="map-hint">Tip: you can use country names, city names, or specific places and Roster will try to pin them.</p>'
+                }
+              </div>
+
+              <div class="map-location-list">
+                ${buildMapLocationList(cityGroups, activeSelectedId, today)}
+              </div>
+            </div>
+          `
+          : `
+            <div class="empty-state">
+              <p class="eyebrow">No places</p>
+              <h3>No contacts match this map yet.</h3>
+              <p class="empty-copy">Try another filter or add city names to more people.</p>
+            </div>
+          `
+      }
+    </section>
+  `
+}
+
+function buildMapLocationList(cityGroups, activeSelectedId, today) {
+  const regions = buildMapLocationRegions(cityGroups, activeSelectedId)
+
+  return regions
+    .map((region, regionIndex) => {
+      const regionKey = `region:${region.key}`
+      const regionOpen = isMapLocationPanelOpen(regionKey, region.containsSelected || regionIndex < 2)
+
+      return `
+        <section class="map-location-card map-location-card--region ${region.containsSelected ? 'selected' : ''} ${regionOpen ? 'is-open' : 'is-closed'}">
+          <button
+            class="map-location-card__toggle"
+            type="button"
+            aria-expanded="${regionOpen ? 'true' : 'false'}"
+            data-action="toggle-map-location"
+            data-map-location-key="${escapeAttribute(regionKey)}"
+          >
+            <div class="map-location-card__head">
+              <div>
+                <strong>${escapeHtml(region.label)}</strong>
+                <small>${region.mappedCount ? `${region.mappedCount} pinned` : 'Waiting on map resolution'}</small>
+              </div>
+              <span class="map-location-card__meta">
+                <span class="settings-pill">${region.recordCount}</span>
+                <span class="map-location-card__chevron" aria-hidden="true"></span>
+              </span>
+            </div>
+          </button>
+
+          <div class="map-location-card__body">
+            <div class="map-location-card__body-inner">
+              ${region.cities
+                .map((group, cityIndex) => {
+                  const cityKey = `city:${group.key}`
+                  const cityOpen = isMapLocationPanelOpen(cityKey, group.containsSelected || region.cities.length === 1 || cityIndex === 0)
+
+                  return `
+                    <section class="map-city-group ${group.containsSelected ? 'selected' : ''} ${cityOpen ? 'is-open' : 'is-closed'}">
+                      <button
+                        class="map-city-group__toggle"
+                        type="button"
+                        aria-expanded="${cityOpen ? 'true' : 'false'}"
+                        data-action="toggle-map-location"
+                        data-map-location-key="${escapeAttribute(cityKey)}"
+                      >
+                        <div class="map-location-card__head">
+                          <div>
+                            <strong>${escapeHtml(group.city)}</strong>
+                            <small>${group.coordinates ? 'Pinned on map' : 'Resolving location…'}</small>
+                          </div>
+                          <span class="map-location-card__meta">
+                            <span class="settings-pill">${group.records.length}</span>
+                            <span class="map-location-card__chevron" aria-hidden="true"></span>
+                          </span>
+                        </div>
+                      </button>
+
+                      <div class="map-city-group__body">
+                        <div class="map-city-group__body-inner map-location-card__people">
+                          ${group.records
+                            .map((record) => {
+                              const attention = getAttentionState(record, today)
+                              return `
+                                <button class="map-person-row" type="button" data-select="${record.id}">
+                                  <span class="map-person-row__identity">
+                                    ${buildRecordAvatar(record, 'tiny')}
+                                    <span>
+                                      <strong>${escapeHtml(record.name)}</strong>
+                                      <small>${formatReconnectTiming(attention.daysUntil)}</small>
+                                    </span>
+                                  </span>
+                                  <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                                </button>
+                              `
+                            })
+                            .join('')}
+                        </div>
+                      </div>
+                    </section>
+                  `
+                })
+                .join('')}
+            </div>
+          </div>
+        </section>
+      `
+    })
+    .join('')
+}
+
+function buildMapLocationRegions(cityGroups, activeSelectedId) {
+  const regions = new Map()
+
+  cityGroups.forEach((group) => {
+    const region = resolveLocationRegion(group.city)
+    const containsSelected = group.records.some((record) => record.id === activeSelectedId)
+
+    if (!regions.has(region.key)) {
+      regions.set(region.key, {
+        key: region.key,
+        label: region.label,
+        cities: [],
+        recordCount: 0,
+        mappedCount: 0,
+        containsSelected: false,
+      })
+    }
+
+    const entry = regions.get(region.key)
+    entry.cities.push({ ...group, containsSelected })
+    entry.recordCount += group.records.length
+    entry.mappedCount += group.coordinates ? 1 : 0
+    entry.containsSelected = entry.containsSelected || containsSelected
+  })
+
+  return Array.from(regions.values()).sort((first, second) => {
+    if (first.containsSelected !== second.containsSelected) {
+      return first.containsSelected ? -1 : 1
+    }
+    if (first.mappedCount !== second.mappedCount) {
+      return second.mappedCount - first.mappedCount
+    }
+    return first.label.localeCompare(second.label)
+  })
+}
+
+function resolveLocationRegion(location) {
+  const normalized = normalizeLocationLabel(location)
+  const normalizedLower = normalized.toLowerCase()
+
+  if (!normalized || normalizedLower === 'unmapped') {
+    return { key: 'unmapped', label: 'Unmapped' }
+  }
+
+  const parts = normalized.split(',').map((part) => part.trim()).filter(Boolean)
+  if (parts.length > 1) {
+    const country = parts[parts.length - 1]
+    return { key: slugify(country) || 'region', label: country }
+  }
+
+  const cachedLabel = geocodeCache[normalizedLower]?.label
+  if (cachedLabel) {
+    const cachedParts = String(cachedLabel).split(',').map((part) => part.trim()).filter(Boolean)
+    if (cachedParts.length) {
+      const country = cachedParts[cachedParts.length - 1]
+      return { key: slugify(country) || 'region', label: country }
+    }
+  }
+
+  const regionMatches = [
+    { pattern: /dubai|abu dhabi|united arab emirates|uae/, label: 'United Arab Emirates' },
+    { pattern: /riyadh|saudi arabia/, label: 'Saudi Arabia' },
+    { pattern: /doha|qatar/, label: 'Qatar' },
+    { pattern: /istanbul/, label: 'Turkey' },
+    { pattern: /cairo|egypt/, label: 'Egypt' },
+    { pattern: /paris|france/, label: 'France' },
+    { pattern: /london|united kingdom/, label: 'United Kingdom' },
+    { pattern: /berlin/, label: 'Germany' },
+    { pattern: /amsterdam|netherlands/, label: 'Netherlands' },
+    { pattern: /zurich|switzerland/, label: 'Switzerland' },
+    { pattern: /rome/, label: 'Italy' },
+    { pattern: /barcelona|spain/, label: 'Spain' },
+    { pattern: /lisbon|portugal/, label: 'Portugal' },
+    { pattern: /new york|miami|san francisco|los angeles|united states/, label: 'United States' },
+    { pattern: /toronto|canada/, label: 'Canada' },
+    { pattern: /singapore/, label: 'Singapore' },
+    { pattern: /tokyo|japan/, label: 'Japan' },
+    { pattern: /seoul|south korea/, label: 'South Korea' },
+    { pattern: /hong kong/, label: 'Hong Kong' },
+    { pattern: /mumbai|delhi|bangalore|india/, label: 'India' },
+    { pattern: /sydney|australia/, label: 'Australia' },
+    { pattern: /cape town|south africa/, label: 'South Africa' },
+  ]
+
+  const matchedRegion = regionMatches.find((entry) => entry.pattern.test(normalizedLower))
+  const label = matchedRegion?.label || normalized
+  return { key: slugify(label) || 'region', label }
+}
+
+function isMapLocationPanelOpen(key, defaultOpen = false) {
+  if (!key) {
+    return defaultOpen
+  }
+
+  return key in state.mapLocationPanels ? state.mapLocationPanels[key] : defaultOpen
+}
+
+function buildTimelinePanel({ visibleRecords, activeSelectedId, today, groupOptions, tagOptions }) {
+  const events = buildTimelineEvents(visibleRecords, today)
+
+  return `
+    <section class="panel panel--tab-roster panel--timeline-roster">
+      ${buildAlternateViewToolbar('Timeline', visibleRecords.length, groupOptions, tagOptions, today)}
+
+      ${
+        events.length
+          ? `
+            <div class="timeline-list">
+              ${events
+                .map((event, index) => `
+                  <article class="timeline-entry ${event.record.id === activeSelectedId ? 'selected' : ''}" style="animation-delay:${Math.min(index * 35, 280)}ms">
+                    <div class="timeline-entry__rail">
+                      <span class="timeline-entry__dot tone-${event.tone}"></span>
+                    </div>
+                    <button class="timeline-entry__card" type="button" data-select="${event.record.id}">
+                      <div class="timeline-entry__meta">
+                        <span class="timeline-entry__date">${formatLongDate(event.date)}</span>
+                        <i class="status-pill tone-${event.tone}">${event.label}</i>
+                      </div>
+                      <div class="timeline-entry__body">
+                        <div class="timeline-entry__identity">
+                          ${buildRecordAvatar(event.record, 'tiny')}
+                          <div>
+                            <strong>${escapeHtml(event.record.name)}</strong>
+                            <small>${escapeHtml(event.title)}</small>
+                          </div>
+                        </div>
+                        <p>${escapeHtml(event.description)}</p>
+                      </div>
+                    </button>
+                  </article>
+                `)
+                .join('')}
+            </div>
+          `
+          : `
+            <div class="empty-state">
+              <p class="eyebrow">No timeline yet</p>
+              <h3>No events match this view.</h3>
+              <p class="empty-copy">Add memories, contact people, or switch filters to populate the timeline.</p>
+            </div>
+          `
+      }
+    </section>
+  `
+}
+
+function buildRelationshipsPanel({ visibleRecords, activeSelectedId, today, groupOptions, tagOptions }) {
+  const selectedRecord = visibleRecords.find((record) => record.id === activeSelectedId) || visibleRecords[0] || null
+  const connectedRecords = visibleRecords
+    .map((record) => ({ record, linkCount: getRelatedRecords(record).length }))
+    .sort((first, second) => second.linkCount - first.linkCount || compareRecords(first.record, second.record, today))
+
+  if (!selectedRecord) {
+    return `
+      <section class="panel panel--tab-roster panel--relationships-roster">
+        ${buildAlternateViewToolbar('Relationships', visibleRecords.length, groupOptions, tagOptions, today)}
+        <div class="empty-state">
+          <p class="eyebrow">No relationships yet</p>
+          <h3>Add a person to start the atlas.</h3>
+          <p class="empty-copy">Once people are in Roster and linked to each other, this space will show how the whole orbit hangs together.</p>
+        </div>
+      </section>
+    `
+  }
+
+  const orbit = buildOrbitData(selectedRecord)
+  const linkedCount = connectedRecords.filter(({ linkCount }) => linkCount > 0).length
+  const disconnectedCount = Math.max(visibleRecords.length - linkedCount, 0)
+  const strongSignals = connectedRecords.filter(({ linkCount }) => linkCount > 0).slice(0, 6)
+
+  return `
+    <section class="panel panel--tab-roster panel--relationships-roster">
+      ${buildAlternateViewToolbar('Relationships', visibleRecords.length, groupOptions, tagOptions, today)}
+
+      <div class="relationship-atlas">
+        <aside class="relationship-browser">
+          <div class="relationship-browser__head">
+            <div>
+              <p class="eyebrow">Relationship atlas</p>
+              <strong>Browse every orbit.</strong>
+            </div>
+            <span class="settings-pill">${visibleRecords.length}</span>
+          </div>
+
+          <div class="relationship-browser__stats">
+            <div class="relationship-stat">
+              <strong>${linkedCount}</strong>
+              <small>linked people</small>
+            </div>
+            <div class="relationship-stat">
+              <strong>${disconnectedCount}</strong>
+              <small>still unlinked</small>
+            </div>
+          </div>
+
+          <div class="relationship-browser__list">
+            ${connectedRecords
+              .map(({ record, linkCount }, index) => {
+                const attention = getAttentionState(record, today)
+                return `
+                  <button
+                    class="relationship-person-row ${record.id === selectedRecord.id ? 'selected' : ''}"
+                    type="button"
+                    data-select="${record.id}"
+                    style="animation-delay:${Math.min(index * 26, 220)}ms"
+                  >
+                    <span class="relationship-person-row__identity">
+                      ${buildRecordAvatar(record, 'tiny')}
+                      <span>
+                        <strong>${escapeHtml(record.name)}</strong>
+                        <small>${linkCount ? `${linkCount} link${linkCount === 1 ? '' : 's'}` : 'No links yet'}</small>
+                      </span>
+                    </span>
+                    <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                  </button>
+                `
+              })
+              .join('')}
+          </div>
+        </aside>
+
+        <div class="relationship-stage">
+          <div class="relationship-stage__head">
+            <div>
+              <p class="eyebrow">Selected orbit</p>
+              <h3>${escapeHtml(selectedRecord.name)}</h3>
+              <p class="empty-copy">Direct links sit inside the first ring, then nearby connections fan outward so you can see the shape of the circle fast.</p>
+            </div>
+            <div class="relationship-stage__summary">
+              <div class="relationship-stage__pill">
+                <strong>${orbit.direct.length}</strong>
+                <small>direct</small>
+              </div>
+              <div class="relationship-stage__pill">
+                <strong>${orbit.secondary.length}</strong>
+                <small>nearby</small>
+              </div>
+            </div>
+          </div>
+
+          <article class="network-canvas-card relationship-canvas-card">
+            ${buildOrbitCanvasMarkup(orbit, selectedRecord, {
+              emptyTitle: 'Link one related person to wake up this orbit.',
+              emptyBody: 'Open the profile, add someone in Related people, and this graph will stop feeling lonely.',
+            })}
+          </article>
+        </div>
+
+        <aside class="relationship-sidebar">
+          ${buildOrbitLinker(selectedRecord)}
+
+          <article class="brief-card">
+            <p class="eyebrow">Selected person</p>
+            <div class="relationship-focus-card">
+              <div class="relationship-focus-card__identity">
+                ${buildRecordAvatar(selectedRecord, 'small')}
+                <div>
+                  <strong>${escapeHtml(selectedRecord.name)}</strong>
+                  <small>${tierMeta[selectedRecord.tier].label}${selectedRecord.city ? ` · ${escapeHtml(selectedRecord.city)}` : ''}</small>
+                </div>
+              </div>
+              <div class="relationship-focus-card__meta">
+                <span>${selectedRecord.cadenceDays} day cadence</span>
+                <span>${selectedRecord.groups.length ? escapeHtml(selectedRecord.groups[0]) : 'No group yet'}</span>
+              </div>
+            </div>
+            <div class="quick-capture__actions">
+              <button class="button button-secondary" type="button" data-action="open-profile">Full profile</button>
+              <button class="button button-secondary" type="button" data-action="open-network">Open orbit overlay</button>
+            </div>
+          </article>
+
+          ${buildOrbitSidebarMarkup(orbit, today)}
+
+          <article class="brief-card">
+            <p class="eyebrow">Most connected</p>
+            ${
+              strongSignals.length
+                ? `
+                  <div class="network-chip-cloud">
+                    ${strongSignals
+                      .map(
+                        ({ record, linkCount }) => `
+                          <button class="tag tag-chip" type="button" data-select="${record.id}">
+                            <span>${escapeHtml(record.name)}</span>
+                            <small>${linkCount} link${linkCount === 1 ? '' : 's'}</small>
+                          </button>
+                        `,
+                      )
+                      .join('')}
+                  </div>
+                `
+                : '<p class="empty-copy">No one has related links yet, so the atlas is waiting on the first few connections.</p>'
+            }
+          </article>
+        </aside>
+      </div>
     </section>
   `
 }
@@ -1041,6 +1935,7 @@ function buildInspectorSection(key, eyebrow, title, summary, content, badge = ''
     badge,
     content,
     open: state.inspectorPanels[key] !== false,
+    targetName: key === 'basics' ? 'inspector-basics' : '',
   })
 }
 
@@ -1053,60 +1948,77 @@ function buildInspector(record, today) {
   const nextTouchDate = getNextTouchDate(record)
   const nextTouchLabel = formatCompactDate(nextTouchDate)
   const touchStyleCount = getTouchStyles(record.touchStyle).length
-
-  return `
-    <div class="inspector-overview">
-      <article class="identity-hero" data-drop-zone="avatar">
-        <div class="identity-hero__main">
-          ${buildRecordAvatar(record, 'large')}
-          <div>
-            <p class="eyebrow">Selected person</p>
-            <h3 class="identity-hero__name">${escapeHtml(record.name)}</h3>
-            <div class="identity-meta">
-              <span>Added ${formatCompactDate(record.createdAt)}</span>
-              <span>${tierMeta[record.tier].label}</span>
-              <span>${record.groups.length ? `${record.groups.length} groups` : 'No groups yet'}</span>
-            </div>
+  const identityHeader = `
+    <div class="identity-hero identity-hero--header" data-drop-zone="avatar" data-drop-label="Drop a photo">
+      <div class="identity-hero__main">
+        ${buildRecordAvatar(record, 'large')}
+        <div>
+          <p class="eyebrow">Selected person</p>
+          <h3 class="identity-hero__name">${escapeHtml(record.name)}</h3>
+          <div class="identity-meta">
+            <span>Added ${formatCompactDate(record.createdAt)}</span>
+            <span>${tierMeta[record.tier].label}</span>
+            <span>${record.groups.length ? `${record.groups.length} groups` : 'No groups yet'}</span>
           </div>
         </div>
-        <div class="identity-hero__actions">
-          <button class="button button-secondary" type="button" data-action="open-profile">Full profile</button>
-          <button class="button button-secondary" type="button" data-action="upload-avatar">${record.avatar ? 'Change photo' : 'Add photo'}</button>
-          ${record.avatar ? '<button class="button button-secondary" type="button" data-action="remove-avatar">Remove photo</button>' : ''}
-        </div>
-      </article>
-
-      <article class="status-hero">
-        <div class="status-hero__top">
-          <div>
-            <p class="eyebrow">Connection status</p>
-            <h3>${statusHeadline(attention)}</h3>
-          </div>
-          <i class="status-pill tone-${attention.tone}">${attention.label}</i>
-        </div>
-        <p class="status-hero__detail">
-          Last contact ${formatCompactDate(record.lastContact)} · Next touch ${nextTouchLabel} · ${record.cadenceDays} day rhythm
-        </p>
-      </article>
-
-      <div class="inspector-stats">
-        ${metricCard('Bond health', `${record.bondHealth}%`, '', 'Relationship strength snapshot')}
-        ${metricCard('Next touch', nextTouchLabel, '', `${record.touchStyle} · ${formatLongDate(nextTouchDate)}`)}
-        ${metricCard('Cadence', `${record.cadenceDays} days`, '', 'Planned check-in spacing')}
-        ${metricCard('Memories', `${record.memories.length}`, '', 'Saved notes and context')}
       </div>
     </div>
-
-    <div class="inspector-actions">
-      <button class="button button-primary" data-action="mark-touched">Mark touched today</button>
-      <button class="button button-secondary" data-action="open-brief">Meeting brief</button>
-      <button class="button button-secondary" data-action="focus-memory">Add memory</button>
-      <button class="button button-secondary button-archive" data-action="${record.archived ? 'restore-person' : 'archive-person'}">
-        ${record.archived ? 'Restore' : 'Archive'}
-      </button>
+  `
+  const statusHeader = `
+    <div class="status-hero status-hero--header">
+      <div class="status-hero__top">
+        <div>
+          <p class="eyebrow">Connection status</p>
+          <h3>${statusHeadline(attention)}</h3>
+        </div>
+        <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+      </div>
+      <p class="status-hero__detail">
+        Last contact ${formatCompactDate(record.lastContact)} · Next touch ${nextTouchLabel} · ${record.cadenceDays} day rhythm
+      </p>
     </div>
+  `
 
+  return `
     <div class="inspector-stack">
+      ${buildStaticSection({
+        scope: 'inspector',
+        className: 'collapsible-section--hero-static',
+        headerContent: identityHeader,
+        targetName: 'inspector-identity',
+        content: `
+          <div class="identity-hero__actions">
+            <button class="button button-secondary" type="button" data-action="open-profile" ${keyHintAttrs('P')}>Full profile</button>
+            <button class="button button-secondary" type="button" data-action="upload-avatar">${record.avatar ? 'Change photo' : 'Add photo'}</button>
+            ${record.avatar ? '<button class="button button-secondary" type="button" data-action="remove-avatar">Remove photo</button>' : ''}
+          </div>
+        `,
+      })}
+
+      ${buildStaticSection({
+        scope: 'inspector',
+        className: 'collapsible-section--hero-static',
+        headerContent: statusHeader,
+        targetName: 'inspector-status',
+        content: `
+          <div class="inspector-stats">
+            ${metricCard('Bond health', `${record.bondHealth}%`, '', 'Relationship strength snapshot')}
+            ${metricCard('Next touch', nextTouchLabel, '', `${record.touchStyle} · ${formatLongDate(nextTouchDate)}`)}
+            ${metricCard('Cadence', `${record.cadenceDays} days`, '', 'Planned check-in spacing')}
+            ${metricCard('Memories', `${record.memories.length}`, '', 'Saved notes and context')}
+          </div>
+
+          <div class="inspector-actions">
+            <button class="button button-primary" data-action="mark-touched" ${keyHintAttrs('M')}>Mark touched today</button>
+            <button class="button button-secondary" data-action="open-brief" ${keyHintAttrs('B')}>Meeting brief</button>
+            <button class="button button-secondary" data-action="focus-memory" ${keyHintAttrs('E')}>Add memory</button>
+            <button class="button button-secondary button-archive" data-action="${record.archived ? 'restore-person' : 'archive-person'}" ${keyHintAttrs('A')}>
+              ${record.archived ? 'Restore' : 'Archive'}
+            </button>
+          </div>
+        `,
+      })}
+
       ${buildInspectorSection(
         'basics',
         'Basics',
@@ -1127,8 +2039,8 @@ function buildInspector(record, today) {
 
       ${buildInspectorSection(
         'related',
-        'Related people',
-        'Linked relationships',
+        'Orbit',
+        'Relationship network',
         'Jump between family, friends, collaborators, or shared circles.',
         buildRelatedPeopleEditor(record, relatedRecords, relatedSuggestions),
         `<span class="settings-pill">${relatedRecords.length} linked</span>`,
@@ -1263,7 +2175,7 @@ function buildInspectorBasics(record, tagSuggestions, groupSuggestions) {
 
           <div class="tag-editor__actions">
             <button class="button button-secondary tag-add-button" type="button" data-action="commit-group-draft">Add group</button>
-            <span class="settings-pill">Flexible custom lanes</span>
+            <span class="settings-pill">Saved to this person</span>
           </div>
 
           ${
@@ -1316,7 +2228,7 @@ function buildInspectorBasics(record, tagSuggestions, groupSuggestions) {
 
           <div class="tag-editor__actions">
             <button class="button button-secondary tag-add-button" type="button" data-action="commit-tag-draft">Add tag</button>
-            <span class="settings-pill">Enter to commit</span>
+            <span class="settings-pill">Saved to this person</span>
           </div>
 
           ${
@@ -1410,7 +2322,7 @@ function buildRelatedPeopleEditor(record, relatedRecords, relatedSuggestions) {
       </datalist>
       <div class="tag-editor__actions">
         <button class="button button-secondary tag-add-button" type="button" data-action="commit-related-draft">Link person</button>
-        <span class="settings-pill">Clickable relationship graph</span>
+        <button class="button button-secondary tag-add-button" type="button" data-action="open-network">Open orbit</button>
       </div>
       ${
         relatedSuggestions.length
@@ -1560,7 +2472,7 @@ function buildProfilePanel(record, today) {
           <button class="button button-danger" type="button" data-action="delete-person">Delete</button>
         </div>
 
-        <div class="profile-hero" data-drop-zone="avatar">
+        <div class="profile-hero" data-drop-zone="avatar" data-drop-label="Drop a photo">
           ${buildRecordAvatar(record, 'hero')}
           <div class="profile-hero__copy">
             <p>${tierMeta[record.tier].label} · Added ${formatLongDate(record.createdAt)}</p>
@@ -1812,6 +2724,223 @@ function buildQuickCapturePanel(selectedRecord) {
   `
 }
 
+function buildOrbitPanel(record) {
+  if (!state.networkOpen || !record) {
+    return ''
+  }
+
+  const orbit = buildOrbitData(record)
+
+  return `
+    <div class="network-overlay open" data-overlay="network">
+      <section class="network-panel" role="dialog" aria-modal="true" aria-label="Orbit">
+        <div class="network-panel__header">
+          <div>
+            <p class="eyebrow">Orbit</p>
+            <h2>${escapeHtml(record.name)}</h2>
+            <p class="brief-intro">See how this relationship sits inside your circle, with direct links in the first ring and nearby people fanning out around them.</p>
+          </div>
+          <button class="settings-close" data-action="close-network" aria-label="Close orbit">Close</button>
+        </div>
+
+        <div class="network-layout">
+          <article class="network-canvas-card">
+            ${buildOrbitCanvasMarkup(orbit, record)}
+          </article>
+
+          <aside class="network-sidebar">
+            ${buildOrbitLinker(record)}
+            ${buildOrbitSidebarMarkup(orbit, todayStamp())}
+
+            <article class="brief-card">
+              <p class="eyebrow">Suggested links</p>
+              ${
+                getRelatedSuggestions(record, '')
+                  .slice(0, 6)
+                  .length
+                  ? `
+                    <div class="network-chip-cloud">
+                      ${getRelatedSuggestions(record, '')
+                        .slice(0, 6)
+                        .map(
+                          (candidate) => `
+                            <button class="tag tag-chip" type="button" data-add-related="${escapeAttribute(candidate.id)}">
+                              <span>${escapeHtml(candidate.name)}</span>
+                              <small>link</small>
+                            </button>
+                          `,
+                        )
+                        .join('')}
+                    </div>
+                  `
+                  : '<p class="empty-copy">No open suggestions right now. Everyone in the roster is already directly linked here.</p>'
+              }
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  `
+}
+
+function buildOrbitLinker(record) {
+  const suggestions = getRelatedSuggestions(record, state.relatedDraft)
+
+  return `
+    <article class="brief-card">
+      <p class="eyebrow">Link people</p>
+      <div class="settings-row">
+        <strong>Connect ${escapeHtml(record.name)} to someone else</strong>
+        <small>Create direct relationship links from inside the orbit so the graph updates immediately.</small>
+      </div>
+      <div class="orbit-linker">
+        <input
+          data-related-input
+          data-focus-key="record-related"
+          type="text"
+          placeholder="Type a name to link into this orbit"
+          value="${escapeAttribute(state.relatedDraft)}"
+        />
+        <button class="button button-secondary" type="button" data-action="commit-related-draft">Link person</button>
+      </div>
+      ${
+        suggestions.length
+          ? `
+            <div class="network-chip-cloud">
+              ${suggestions
+                .map(
+                  (candidate) => `
+                    <button class="tag tag-chip" type="button" data-add-related="${escapeAttribute(candidate.id)}">
+                      <span>${escapeHtml(candidate.name)}</span>
+                      <small>link</small>
+                    </button>
+                  `,
+                )
+                .join('')}
+            </div>
+          `
+          : '<p class="empty-copy">No open suggestions right now. Try searching for a person by name.</p>'
+      }
+    </article>
+  `
+}
+
+function buildOrbitCanvasMarkup(orbit, activeRecord, options = {}) {
+  const emptyTitle = options.emptyTitle || 'Start the orbit with one related person.'
+  const emptyBody = options.emptyBody || 'Add a collaborator, sibling, partner, or shared-circle contact to unlock the network view.'
+
+  return `
+    <div class="network-canvas ${options.className || ''}">
+      ${
+        orbit.nodes.length > 1
+          ? `
+            <svg class="network-lines" viewBox="0 0 1000 1000" aria-hidden="true">
+              ${orbit.edges
+                .map(
+                  (edge) => `
+                    <line
+                      x1="${edge.from.x * 10}"
+                      y1="${edge.from.y * 10}"
+                      x2="${edge.to.x * 10}"
+                      y2="${edge.to.y * 10}"
+                      class="network-line network-line--${edge.type}"
+                    />
+                  `,
+                )
+                .join('')}
+            </svg>
+          `
+          : ''
+      }
+
+      ${orbit.nodes
+        .map(
+          (node) => `
+            <button
+              class="network-node network-node--${node.ring} ${node.id === activeRecord.id ? 'is-active' : ''}"
+              type="button"
+              style="left:${node.x}%; top:${node.y}%;"
+              data-select="${node.id}"
+            >
+              <span class="network-node__avatar">
+                ${node.avatar ? `<img src="${escapeAttribute(node.avatar)}" alt="${escapeAttribute(node.name)}" />` : `<strong>${escapeHtml(node.initials)}</strong>`}
+              </span>
+              <span class="network-node__label">${escapeHtml(node.name)}</span>
+            </button>
+          `,
+        )
+        .join('')}
+
+      ${
+        orbit.direct.length
+          ? ''
+          : `
+            <div class="network-empty">
+              <p class="eyebrow">No links yet</p>
+              <h3>${escapeHtml(emptyTitle)}</h3>
+              <p>${escapeHtml(emptyBody)}</p>
+            </div>
+          `
+      }
+    </div>
+  `
+}
+
+function buildOrbitSidebarMarkup(orbit, today) {
+  return `
+    <article class="brief-card">
+      <p class="eyebrow">Direct links</p>
+      ${
+        orbit.direct.length
+          ? `
+            <div class="network-list">
+              ${orbit.direct
+                .map((related) => {
+                  const attention = getAttentionState(related, today)
+                  return `
+                    <button class="network-list__item" type="button" data-select="${related.id}">
+                      <span class="network-list__identity">
+                        ${buildRecordAvatar(related, 'tiny')}
+                        <span>
+                          <strong>${escapeHtml(related.name)}</strong>
+                          <small>${tierMeta[related.tier].label}</small>
+                        </span>
+                      </span>
+                      <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                    </button>
+                  `
+                })
+                .join('')}
+            </div>
+          `
+          : '<p class="empty-copy">No direct links yet. Use the Related people section to connect this person to someone else in your roster.</p>'
+      }
+    </article>
+
+    <article class="brief-card">
+      <p class="eyebrow">Nearby people</p>
+      ${
+        orbit.secondary.length
+          ? `
+            <div class="network-chip-cloud">
+              ${orbit.secondary
+                .map(
+                  (related) => `
+                    <button class="tag tag-chip" type="button" data-select="${related.id}">
+                      <span>${escapeHtml(related.name)}</span>
+                      <small>${getRelatedRecords(related).length} links</small>
+                    </button>
+                  `,
+                )
+                .join('')}
+            </div>
+          `
+          : '<p class="empty-copy">Once direct links are connected to other people, the second ring will light up here.</p>'
+      }
+    </article>
+  `
+}
+
 function buildMobileQuickBar(selectedRecord) {
   return `
     <div class="mobile-quickbar">
@@ -1837,10 +2966,12 @@ function buildMeetingBrief(record, today) {
   const birthday = getBirthdayState(record, today)
   const related = getRelatedRecords(record).map((person) => person.name)
   const memoryCues = record.memories.slice(0, 3).map((memory) => `${formatCompactDate(memory.date)}: ${truncate(memory.text, 120)}`)
+  const touchStyleLabel = normalizeTouchStyle(record.touchStyle)
+  const touchStyleTone = touchStyleLabel ? touchStyleLabel.toLowerCase() : 'your usual'
   const prompts = [
     record.focus ? `Ask about ${record.focus}.` : `Open by asking what feels most alive for them right now.`,
     record.notes ? `Use your notes to reconnect naturally: ${truncate(record.notes, 110)}` : `Anchor the conversation with one concrete update you remember from last time.`,
-    record.touchStyle ? `This relationship responds well to ${record.touchStyle.toLowerCase()} energy.` : `Use a tone that matches how you usually connect.`,
+    touchStyleLabel ? `This relationship responds well to ${touchStyleTone} energy.` : `Use a tone that matches how you usually connect.`,
   ]
 
   if (birthday && birthday.daysUntil <= state.settings.reminders.birthdayLeadDays) {
@@ -1848,7 +2979,7 @@ function buildMeetingBrief(record, today) {
   }
 
   return {
-    intro: `${tierMeta[record.tier].label} relationship. ${attention.label}. Best next touch is ${record.touchStyle.toLowerCase()} on ${formatCompactDate(nextTouch)}.`,
+    intro: `${tierMeta[record.tier].label} relationship. ${attention.label}. Best next touch is ${touchStyleTone} on ${formatCompactDate(nextTouch)}.`,
     snapshot: [
       `Last contact: ${formatCompactDate(record.lastContact)}`,
       `Next touch: ${formatCompactDate(nextTouch)}`,
@@ -1869,9 +3000,11 @@ function buildMeetingBrief(record, today) {
 
 function buildInspectorPanel(selectedRecord, today) {
   return `
-    <div class="panel-heading">
-      <p class="eyebrow">Inspector</p>
-      <h2 class="inspector-name">${selectedRecord ? escapeHtml(selectedRecord.name) : 'No person selected'}</h2>
+    <div class="panel-heading panel-heading--inspector-bar">
+      <div>
+        <p class="eyebrow">Inspector</p>
+        <h2 class="inspector-name">${selectedRecord ? escapeHtml(selectedRecord.name) : 'No person selected'}</h2>
+      </div>
     </div>
 
     ${
@@ -1890,46 +3023,72 @@ function buildInspectorPanel(selectedRecord, today) {
 }
 
 function buildSettingsPanel(duplicateGroups = []) {
+  const activeTab = settingsTabs.find((tab) => tab.key === state.settingsTab) || settingsTabs[0]
+  const hiddenAttrs = state.settingsOpen ? '' : ' hidden aria-hidden="true" inert'
+
   return `
-    <div class="settings-overlay ${state.settingsOpen ? 'open' : ''}" data-overlay="settings">
-      <aside class="settings-panel" role="dialog" aria-modal="true" aria-label="Settings panel">
-        <div class="settings-header">
-          <div class="settings-copy">
-            <p class="eyebrow">Settings</p>
-            <h2>Run the workspace.</h2>
-            <p class="settings-note">Faster controls, cleaner defaults, and better data handling for future-you.</p>
+    <div class="settings-overlay ${state.settingsOpen ? 'open' : ''}" data-overlay="settings"${hiddenAttrs}>
+      <section class="settings-panel ${state.settingsAnimating ? 'settings-panel--animate' : ''}" role="dialog" aria-modal="true" aria-label="Settings panel">
+        <div class="settings-shell">
+          <aside class="settings-sidebar">
+            <div class="settings-brand">
+              <div class="settings-copy">
+                <p class="eyebrow">Settings</p>
+                <h2>Run the workspace.</h2>
+                <p class="settings-note">A cleaner control room for how Roster looks, behaves, reminds, and stores your data.</p>
+              </div>
+              <button class="settings-close" data-action="close-settings" aria-label="Close settings">Close</button>
+            </div>
+
+            <div class="settings-nav" role="tablist" aria-label="Settings sections">
+              ${settingsTabs
+                .map(
+                  (tab) => `
+                    <button
+                      class="settings-nav__button ${state.settingsTab === tab.key ? 'active' : ''}"
+                      type="button"
+                      role="tab"
+                      aria-selected="${state.settingsTab === tab.key ? 'true' : 'false'}"
+                      data-settings-tab="${tab.key}"
+                    >
+                      <span class="settings-nav__copy">
+                        <strong>${tab.label}</strong>
+                        <small>${tab.eyebrow}</small>
+                      </span>
+                    </button>
+                  `,
+                )
+                .join('')}
+            </div>
+
+            <div class="settings-sidebar__meta">
+              <span class="settings-pill">${themeOptions.find((theme) => theme.value === state.settings.theme)?.label || 'Mesh Night'}</span>
+              <span class="settings-pill">${state.settings.motion ? 'Motion on' : 'Motion off'}</span>
+              <span class="settings-pill">${state.settings.scale}% scale</span>
+              <span class="settings-pill">${getWorkspaceMode()} mode</span>
+            </div>
+          </aside>
+
+          <div class="settings-main">
+            <div class="settings-main__intro">
+              <div>
+                <p class="eyebrow">${activeTab.eyebrow}</p>
+                <h3>${activeTab.title}</h3>
+                <p class="settings-note">${activeTab.summary}</p>
+              </div>
+              <div class="settings-main__chips">
+                <span class="settings-pill">${state.records.filter((record) => !record.archived).length} active people</span>
+                <span class="settings-pill">${(state.settings.customTouchStyles || []).length + baseTouchStyles.length} touch styles</span>
+                <span class="settings-pill">${(state.settings.customTiers || []).length + baseTierDefinitions.length} tiers</span>
+              </div>
+            </div>
+
+            <div class="settings-body">
+              ${buildSettingsTabContent(duplicateGroups)}
+            </div>
           </div>
-          <button class="settings-close" data-action="close-settings" aria-label="Close settings">Close</button>
         </div>
-
-        <div class="settings-tab-row" role="tablist" aria-label="Settings sections">
-          ${settingsTabs
-            .map(
-              (tab) => `
-                <button
-                  class="settings-tab ${state.settingsTab === tab.key ? 'active' : ''}"
-                  type="button"
-                  role="tab"
-                  aria-selected="${state.settingsTab === tab.key ? 'true' : 'false'}"
-                  data-settings-tab="${tab.key}"
-                >
-                  ${tab.label}
-                </button>
-              `,
-            )
-            .join('')}
-        </div>
-
-        <div class="settings-body">
-          ${buildSettingsTabContent(duplicateGroups)}
-        </div>
-
-        <div class="settings-footer settings-footer--panel">
-          <span class="settings-pill">${themeOptions.find((theme) => theme.value === state.settings.theme)?.label || 'Mesh Night'}</span>
-          <span class="motion-note">${state.settings.motion ? 'Motion on' : 'Motion off'}</span>
-        </div>
-      </aside>
-    </div>
+      </section>
     </div>
   `
 }
@@ -1938,6 +3097,8 @@ function buildSettingsTabContent(duplicateGroups = []) {
   switch (state.settingsTab) {
     case 'defaults':
       return buildDefaultsTab()
+    case 'extra':
+      return buildExtraFeaturesTab()
     case 'shortcuts':
       return buildShortcutsTab()
     case 'data':
@@ -1951,6 +3112,7 @@ function buildSettingsTabContent(duplicateGroups = []) {
 function buildGeneralTab() {
   const touchStyles = getTouchStyles(state.settings.defaults.touchStyle)
   const notificationPermission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+  const featureFlags = state.settings.features || defaultSettings.features
 
   return `
     <section class="settings-card settings-group">
@@ -1978,20 +3140,34 @@ function buildGeneralTab() {
           <small>Show a denser list with just name, due state, next touch, and reconnect timing.</small>
         </div>
         <label class="toggle">
-          <input type="checkbox" data-setting-field="compact" ${state.settings.compact ? 'checked' : ''} />
+          <input type="checkbox" data-setting-field="compact" ${state.settings.compact ? 'checked' : ''} ${!featureFlags.compactToggle ? 'disabled' : ''} />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
       </div>
 
       <div class="settings-switch">
         <div class="settings-row">
-          <strong>Tab roster mode</strong>
-          <small>Swap the main workspace into a denser grid of contact tabs with the inspector hidden.</small>
+          <strong>Ultra compact mode</strong>
+          <small>Switch the classic workspace into a traditional Mesh-style CRM layout with flatter rows, denser scanning, and calmer chrome.</small>
         </div>
         <label class="toggle">
-          <input type="checkbox" data-setting-field="tabView" ${state.settings.tabView ? 'checked' : ''} />
+          <input type="checkbox" data-setting-field="ultraCompact" ${state.settings.ultraCompact ? 'checked' : ''} />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
+      </div>
+
+      <div class="settings-switch">
+        <div class="settings-row">
+          <strong>Workspace mode</strong>
+          <small>Switch between classic CRM, tab cards, a city map, a relationship atlas, or a timeline of activity.</small>
+        </div>
+        <select data-setting-field="workspaceMode" ${!featureFlags.tabViewToggle ? 'disabled' : ''}>
+          <option value="classic" ${getWorkspaceMode() === 'classic' ? 'selected' : ''}>Classic CRM</option>
+          <option value="tab" ${getWorkspaceMode() === 'tab' ? 'selected' : ''}>Tab view</option>
+          <option value="map" ${getWorkspaceMode() === 'map' ? 'selected' : ''}>Map view</option>
+          <option value="relationships" ${getWorkspaceMode() === 'relationships' ? 'selected' : ''}>Relationships</option>
+          <option value="timeline" ${getWorkspaceMode() === 'timeline' ? 'selected' : ''}>Timeline</option>
+        </select>
       </div>
 
       <div class="settings-switch">
@@ -2003,6 +3179,14 @@ function buildGeneralTab() {
           <input type="checkbox" data-setting-field="motion" ${state.settings.motion ? 'checked' : ''} />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
+      </div>
+
+      <div class="settings-switch">
+        <div class="settings-row">
+          <strong>Command palette</strong>
+          <small>Open quick actions with Cmd/Ctrl + K and jump to any major workflow.</small>
+        </div>
+        <span class="settings-pill">Cmd/Ctrl + K</span>
       </div>
 
       <div class="settings-switch">
@@ -2022,7 +3206,7 @@ function buildGeneralTab() {
           <small>Show the power-user key strip beside the settings button.</small>
         </div>
         <label class="toggle">
-          <input type="checkbox" data-setting-field="hints" ${state.settings.hints ? 'checked' : ''} />
+          <input type="checkbox" data-setting-field="hints" ${state.settings.hints ? 'checked' : ''} ${!featureFlags.shortcutDock ? 'disabled' : ''} />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
       </div>
@@ -2032,7 +3216,7 @@ function buildGeneralTab() {
       <p class="eyebrow">Scale</p>
       <div class="settings-row">
         <strong>Workspace scale</strong>
-        <small>Default is 67% because the full layout breathes better at that size.</small>
+        <small>Default is 82% so the workspace feels substantial without crowding the wider layouts.</small>
       </div>
       <label class="settings-row">
         <strong>${state.settings.scale}%</strong>
@@ -2144,7 +3328,7 @@ function buildDefaultsTab() {
         <small>Use this as your starting template instead of rebuilding the same fields each time.</small>
       </div>
 
-      <div class="form-grid">
+      <div class="form-grid form-grid--settings">
         <label>
           <span>Default tier</span>
           <select data-default-field="tier" name="default-tier" autocomplete="off">
@@ -2240,7 +3424,176 @@ function buildDefaultsTab() {
   `
 }
 
+function buildExtraFeaturesTab() {
+  const featureFlags = state.settings.features || defaultSettings.features
+  const customTiers = state.settings.customTiers || []
+  const groupOptions = getUniqueGroups(state.records)
+  const tagOptions = getUniqueTags(state.records)
+
+  return `
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Workspace modules</p>
+      <div class="settings-row">
+        <strong>Turn extra structure on or off</strong>
+        <small>Everything stays available in settings, but the shell can open much cleaner when you hide the modules you do not use.</small>
+      </div>
+
+      <div class="settings-toggle-grid">
+        ${buildFeatureToggle('sidebarViews', 'Views card', 'Left rail entry for all people and focus state.', featureFlags.sidebarViews)}
+        ${buildFeatureToggle('sidebarToday', 'Today card', 'Show the Today module in the left rail.', featureFlags.sidebarToday)}
+        ${buildFeatureToggle('sidebarTiers', 'Tiers card', 'Collapsed by default so the left rail stays lighter.', featureFlags.sidebarTiers)}
+        ${buildFeatureToggle('sidebarGroups', 'Groups card', 'Quick jump by custom group.', featureFlags.sidebarGroups)}
+        ${buildFeatureToggle('sidebarTags', 'Tags card', 'Quick jump by shared context tags.', featureFlags.sidebarTags)}
+        ${buildFeatureToggle('sidebarQueue', 'Attention mode', 'Enable the alternate Today -> Attention queue toggle inside that module.', featureFlags.sidebarQueue)}
+        ${buildFeatureToggle('compactToggle', 'Compact toggle', 'Show the compact-view toggle in the hero.', featureFlags.compactToggle)}
+        ${buildFeatureToggle('tabViewToggle', 'View mode switcher', 'Show the classic, tab, map, and timeline switcher in the hero.', featureFlags.tabViewToggle)}
+        ${buildFeatureToggle('shortcutDock', 'Shortcut dock', 'Show the keyboard helper strip beside the hero actions.', featureFlags.shortcutDock)}
+      </div>
+    </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Custom tiers</p>
+      <div class="settings-row">
+        <strong>Add or remove relationship lanes</strong>
+        <small>The four core tiers stay protected. Custom tiers appear in filters, defaults, and person records.</small>
+      </div>
+
+      ${
+        customTiers.length
+          ? `
+            <div class="settings-token-stack">
+              ${customTiers
+                .map(
+                  (tier) => `
+                    <div class="settings-token-card">
+                      <div>
+                        <strong>${escapeHtml(tier.label)}</strong>
+                        <small>${escapeHtml(tier.cadenceHint)}</small>
+                      </div>
+                      <button class="button button-secondary button-small" type="button" data-action="remove-tier" data-tier-key="${escapeAttribute(tier.key)}">
+                        Delete
+                      </button>
+                    </div>
+                  `,
+                )
+                .join('')}
+            </div>
+          `
+          : '<div class="empty-copy">No custom tiers yet. Add one if your relationship map needs more nuance.</div>'
+      }
+
+      <div class="form-grid">
+        <label>
+          <span>Tier name</span>
+          <input data-tier-draft-field="label" type="text" value="${escapeAttribute(state.tierDraft.label)}" placeholder="Advisors, Family, VIP..." />
+        </label>
+        <label>
+          <span>Cadence hint</span>
+          <input data-tier-draft-field="cadenceHint" type="text" value="${escapeAttribute(state.tierDraft.cadenceHint)}" placeholder="Every month, check quarterly..." />
+        </label>
+        <label class="wide">
+          <span>Description</span>
+          <textarea data-tier-draft-field="description" rows="3" placeholder="What makes this lane different?">${escapeHtml(state.tierDraft.description)}</textarea>
+        </label>
+      </div>
+
+      <div class="settings-actions-grid">
+        <button class="button button-secondary" type="button" data-action="add-tier">Add tier</button>
+      </div>
+    </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Taxonomy cleanup</p>
+      <div class="settings-row">
+        <strong>Remove stale tags and groups</strong>
+        <small>Deleting one here removes it from the whole roster and from the new-contact template too.</small>
+      </div>
+
+      <div class="settings-split">
+        <div class="settings-stack">
+          <strong>Groups</strong>
+          ${
+            groupOptions.length
+              ? `
+                <div class="profile-token-row">
+                  ${groupOptions
+                    .map(
+                      (group) => `
+                        <button class="tag tag-chip" type="button" data-action="remove-global-group" data-group-value="${escapeAttribute(group)}">
+                          <span>${escapeHtml(group)}</span>
+                          <small>delete</small>
+                        </button>
+                      `,
+                    )
+                    .join('')}
+                </div>
+              `
+              : '<div class="empty-copy">No groups to clean up yet.</div>'
+          }
+        </div>
+
+        <div class="settings-stack">
+          <strong>Tags</strong>
+          ${
+            tagOptions.length
+              ? `
+                <div class="profile-token-row">
+                  ${tagOptions
+                    .map(
+                      (tag) => `
+                        <button class="tag tag-chip" type="button" data-action="remove-global-tag" data-tag-value="${escapeAttribute(tag)}">
+                          <span>${escapeHtml(tag)}</span>
+                          <small>delete</small>
+                        </button>
+                      `,
+                    )
+                    .join('')}
+                </div>
+              `
+              : '<div class="empty-copy">No tags to clean up yet.</div>'
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Onboarding</p>
+      <div class="settings-row">
+        <strong>Start fresh or rerun the walkthrough</strong>
+        <small>New users get a short tutorial. If you already know the product, you can skip it or launch it again later from here.</small>
+      </div>
+      <div class="settings-actions-grid">
+        <button class="button button-secondary" type="button" data-action="rerun-tutorial">Replay tutorial</button>
+        <button class="button button-secondary" type="button" data-action="mark-tutorial-seen">Skip tutorial by default</button>
+      </div>
+    </section>
+  `
+}
+
+function buildFeatureToggle(key, title, description, enabled) {
+  return `
+    <label class="settings-switch settings-switch--stacked">
+      <div class="settings-row">
+        <strong>${title}</strong>
+        <small>${description}</small>
+      </div>
+      <span class="toggle">
+        <input type="checkbox" data-feature-field="${key}" ${enabled ? 'checked' : ''} />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </span>
+    </label>
+  `
+}
+
 function buildShortcutsTab() {
+  const selectedRecord = getSelectedRecord()
+  const commandGroups = getCommandPaletteCommands(selectedRecord).reduce((groups, command) => {
+    const group = groups.get(command.group) || []
+    group.push(command)
+    groups.set(command.group, group)
+    return groups
+  }, new Map())
+
   return `
     <section class="settings-card settings-group">
       <p class="eyebrow">Keyboard</p>
@@ -2257,6 +3610,40 @@ function buildShortcutsTab() {
                 <span class="key-pill">${entry.keys}</span>
                 <strong>${entry.action}</strong>
               </div>
+            `,
+          )
+          .join('')}
+      </div>
+    </section>
+
+    <section class="settings-card settings-group">
+      <p class="eyebrow">Quick actions</p>
+      <div class="settings-row">
+        <strong>Everything in the command palette</strong>
+        <small>Open the palette with Cmd/Ctrl + K, type a few letters, and jump straight to the action you want.</small>
+      </div>
+      <div class="shortcut-command-list">
+        ${Array.from(commandGroups.entries())
+          .map(
+            ([group, commands]) => `
+              <section class="shortcut-command-group">
+                <h4>${escapeHtml(group)}</h4>
+                <div class="shortcut-command-group__list">
+                  ${commands
+                    .map(
+                      (command) => `
+                        <div class="hotkey-item hotkey-item--command">
+                          <div class="hotkey-item__copy">
+                            <strong>${escapeHtml(command.label)}</strong>
+                            <small>${escapeHtml(command.shortcut || 'Command palette only')}</small>
+                          </div>
+                          <span class="key-pill">${escapeHtml(command.shortcut || 'Type to run')}</span>
+                        </div>
+                      `,
+                    )
+                    .join('')}
+                </div>
+              </section>
             `,
           )
           .join('')}
@@ -2360,8 +3747,8 @@ function buildDataTab(duplicateGroups = []) {
     <section class="settings-card settings-group">
       <p class="eyebrow">Roster</p>
       <div class="settings-row">
-        <strong>Reset to your seeded roster</strong>
-        <small>Replaces the current workspace with the six-person base list you gave me.</small>
+        <strong>Reset to the seeded demo roster</strong>
+        <small>Replace the current workspace with a richer six-person sample so the app is ready to demo again.</small>
       </div>
       <div class="settings-footer">
         <button class="button button-secondary" data-action="reset-roster" type="button">Reset roster</button>
@@ -2383,6 +3770,532 @@ function buildDataTab(duplicateGroups = []) {
         <small>The local-first app now has quick capture and reminder plumbing. The next real jump would be a native iPhone companion and Mac menu bar reminders.</small>
       </div>
     </section>
+  `
+}
+
+function buildOnboardingPanel() {
+  if (!state.onboardingOpen) {
+    return ''
+  }
+
+  const step = onboardingSteps[state.onboardingStep] || onboardingSteps[0]
+  const isLastStep = state.onboardingStep === onboardingSteps.length - 1
+
+  return `
+    <div class="onboarding-overlay ${step.target ? 'has-target' : ''}" data-overlay="onboarding" data-onboarding-step="${escapeAttribute(step.target || '')}" data-placement="${escapeAttribute(step.placement || 'center')}">
+      <section class="onboarding-panel" role="dialog" aria-modal="true" aria-label="Roster onboarding">
+        <p class="eyebrow">${step.eyebrow}</p>
+        <h2>${step.title}</h2>
+        <p class="onboarding-copy">${step.body}</p>
+        <div class="onboarding-progress">
+          ${onboardingSteps
+            .map(
+              (_, index) => `
+                <span class="onboarding-dot ${index === state.onboardingStep ? 'active' : ''}"></span>
+              `,
+            )
+            .join('')}
+        </div>
+        <div class="onboarding-actions">
+          <button class="button button-secondary" type="button" data-action="skip-tutorial">I'm an expert already</button>
+          ${
+            state.onboardingStep
+              ? '<button class="button button-secondary" type="button" data-action="prev-tutorial-step">Back</button>'
+              : ''
+          }
+          <button class="button button-primary" type="button" data-action="${isLastStep ? 'finish-tutorial' : 'next-tutorial-step'}">
+            ${isLastStep ? 'Start using Roster' : 'Next'}
+          </button>
+        </div>
+      </section>
+    </div>
+  `
+}
+
+function buildBootSplash() {
+  if (!state.booting) {
+    return ''
+  }
+
+  return `
+    <div class="boot-overlay">
+      <div class="boot-panel">
+        <img class="boot-logo" src="./assets/roster-logo.svg?v=20260401f" alt="Roster logo" />
+        <div class="boot-copy">
+          <p class="eyebrow">Roster</p>
+          <strong>Warming the orbit.</strong>
+          <small>Give it one very dramatic heartbeat.</small>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function buildHeroSection({
+  workspaceMode,
+  featureFlags,
+  activeRecords,
+  selectedRecord,
+  needsAttentionCount,
+  overdueCount,
+  memoryCount,
+  averageHealth,
+  topQueue,
+  todayQueue,
+  thisWeekQueue,
+  ultraCompactActive,
+}) {
+  const compactToggleLabel = state.settings.compact ? 'Full view' : 'Compact view'
+  const summaryMarkup = ultraCompactActive
+    ? `
+      ${summaryTile('Open relationships', activeRecords.length, 'Entire active roster in one dense CRM view')}
+      ${summaryTile('Priority queue', topQueue.length, `${todayQueue.length} due today · ${thisWeekQueue.length} due this week`)}
+      ${summaryTile('Needs attention', needsAttentionCount, `${overdueCount} overdue now`)}
+      ${summaryTile('Stored memory', memoryCount, `${averageHealth}% average bond health`)}
+    `
+    : `
+      ${summaryTile('People tracked', activeRecords.length, 'Only your active roster lives here')}
+      ${summaryTile('Needs attention', needsAttentionCount, `${overdueCount} overdue right now`)}
+      ${summaryTile('Memories saved', memoryCount, 'Stored context for future you')}
+      ${summaryTile('Average bond', `${averageHealth}%`, 'Live relationship health across active people')}
+    `
+
+  return `
+    <header class="hero ${ultraCompactActive ? 'hero--ultra' : ''}">
+      <div class="hero-copy ${ultraCompactActive ? 'hero-copy--ultra' : ''}">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="./assets/roster-logo.svg?v=20260414a" alt="Roster logo" />
+          <div class="brand-lockup__text">
+            <p class="eyebrow">Roster</p>
+            <small>The friend CRM</small>
+          </div>
+        </div>
+        <div class="${ultraCompactActive ? 'hero-compact-bar' : ''}">
+          <div class="${ultraCompactActive ? 'hero-compact-heading' : ''}">
+            <h1>${ultraCompactActive ? 'Operate the roster.' : 'Your people, clearly remembered.'}</h1>
+            <p class="hero-summary">
+              ${
+                ultraCompactActive
+                  ? 'Ultra compact mode turns the shell into a calmer, denser operating view with faster scanning, flatter rows, and less decorative chrome.'
+                  : 'Track the relationships that matter, keep memory attached to each person, and move through your roster with less friction.'
+              }
+            </p>
+            ${
+              ultraCompactActive
+                ? `
+                  <div class="hero-compact-badges">
+                    <span class="command-chip"><b>CRM</b><small>Traditional list + inspector</small></span>
+                    <span class="command-chip"><b>Focus</b><small>${escapeHtml(selectedRecord?.name || 'No person selected')}</small></span>
+                    <span class="command-chip"><b>Queue</b><small>${topQueue.length} people need review</small></span>
+                  </div>
+                `
+                : ''
+            }
+          </div>
+          <div class="button-row ${ultraCompactActive ? 'button-row--ultra' : ''}" data-onboarding-target="hero-actions">
+            <button class="button button-primary" data-action="add-person" ${keyHintAttrs('N')}>Add person</button>
+            <button class="button button-secondary" data-action="open-settings" data-onboarding-target="hero-settings" ${keyHintAttrs('G')}>Settings</button>
+            <button class="button button-secondary" data-action="open-command-palette" ${keyHintAttrs('Cmd/Ctrl + K')}>Quick actions</button>
+            ${
+              featureFlags.compactToggle
+                ? `
+                  <button class="button button-secondary ${state.settings.compact ? 'button-active' : ''}" data-action="toggle-compact" ${keyHintAttrs('C')}>
+                    ${compactToggleLabel}
+                  </button>
+                `
+                : ''
+            }
+            ${
+              featureFlags.tabViewToggle
+                ? `
+                  <div class="mode-switcher" role="tablist" aria-label="Workspace view" data-onboarding-target="hero-modes">
+                    ${buildWorkspaceModeButton('classic', ultraCompactActive ? 'CRM' : 'Classic CRM', workspaceMode)}
+                    ${buildWorkspaceModeButton('tab', 'Tab view', workspaceMode)}
+                    ${buildWorkspaceModeButton('map', 'Map view', workspaceMode)}
+                    ${buildWorkspaceModeButton('relationships', 'Relationships', workspaceMode)}
+                    ${buildWorkspaceModeButton('timeline', 'Timeline', workspaceMode)}
+                  </div>
+                `
+                : ''
+            }
+            <div class="shell-controls">
+              <span class="command-chip">
+                <b>[</b>
+                <small>Left rail</small>
+              </span>
+              ${
+                workspaceMode === 'classic'
+                  ? `
+                    <span class="command-chip">
+                      <b>]</b>
+                      <small>Inspector</small>
+                    </span>
+                  `
+                  : ''
+              }
+            </div>
+            ${state.settings.hints && featureFlags.shortcutDock ? buildPowerDock() : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-grid ${ultraCompactActive ? 'summary-grid--ultra' : ''}">
+        ${summaryMarkup}
+      </div>
+    </header>
+  `
+}
+
+function buildClassicRosterPanel({
+  visibleRecords,
+  activeSelectedId,
+  today,
+  groupOptions,
+  tagOptions,
+  ultraCompactActive,
+}) {
+  const compactListActive = state.settings.compact || ultraCompactActive
+  const panelClassName = ['panel', ultraCompactActive ? 'panel--classic-ultra' : ''].filter(Boolean).join(' ')
+  const headerClassName = ['roster-header', 'roster-header--stacked', ultraCompactActive ? 'roster-header--crm' : '']
+    .filter(Boolean)
+    .join(' ')
+  const listClassName = [
+    'plain-list',
+    'record-list',
+    'record-list--animated',
+    compactListActive ? 'record-list--compact' : '',
+    ultraCompactActive ? 'record-list--ultra' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  return `
+    <section class="${panelClassName}">
+      <div class="${headerClassName}">
+        <div class="panel-heading">
+          <p class="eyebrow">${ultraCompactActive ? 'Pipeline' : 'Roster'}</p>
+          <h2>${buildAnimatedValue(String(visibleRecords.length), 'visible-records-count', { tag: 'span', className: 'inline-count animated-value--large' })} ${ultraCompactActive ? 'open relationships' : 'people in view'}</h2>
+          <p class="roster-filter-context ${ultraCompactActive ? 'roster-filter-context--crm' : ''}">
+            <span>View</span>
+            ${buildAnimatedText(filterLabel(state.filter), 'classic-filter-label')}
+            <span>Group</span>
+            ${buildAnimatedText(state.groupFilter || 'All groups', 'classic-group-label')}
+            <span>Tag</span>
+            ${buildAnimatedText(state.tagFilter || 'All tags', 'classic-tag-label')}
+          </p>
+        </div>
+
+        <div class="roster-toolbar ${ultraCompactActive ? 'roster-toolbar--crm' : ''}">
+          <label class="toolbar-select toolbar-select--compact">
+            <span>Tier</span>
+            <select data-ui-filter="tier" data-focus-key="tier-filter">
+              <option value="all" ${state.filter === 'all' ? 'selected' : ''}>All people</option>
+              <option value="needs-attention" ${state.filter === 'needs-attention' ? 'selected' : ''}>Needs attention</option>
+              ${tierOrder.map((tier) => `<option value="${tier}" ${state.filter === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
+              <option value="archived" ${state.filter === 'archived' ? 'selected' : ''}>Archived</option>
+            </select>
+          </label>
+          <label class="toolbar-select">
+            <span>Group</span>
+            <select data-ui-filter="group" data-focus-key="group-filter">
+              <option value="">All groups</option>
+              ${groupOptions.map((group) => `<option value="${escapeAttribute(group)}" ${state.groupFilter === group ? 'selected' : ''}>${escapeHtml(group)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="toolbar-select">
+            <span>Tag</span>
+            <select data-ui-filter="tag" data-focus-key="tag-filter">
+              <option value="">All tags</option>
+              ${tagOptions.map((tag) => `<option value="${escapeAttribute(tag)}" ${state.tagFilter === tag ? 'selected' : ''}>${escapeHtml(tag)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="toolbar-select">
+            <span>Sort</span>
+            <select data-ui-filter="sort" data-focus-key="sort-mode">
+              <option value="attention" ${state.sortMode === 'attention' ? 'selected' : ''}>Attention</option>
+              <option value="name" ${state.sortMode === 'name' ? 'selected' : ''}>Name</option>
+              <option value="created" ${state.sortMode === 'created' ? 'selected' : ''}>Created</option>
+              <option value="group" ${state.sortMode === 'group' ? 'selected' : ''}>Group</option>
+              <option value="tag" ${state.sortMode === 'tag' ? 'selected' : ''}>Tag</option>
+            </select>
+          </label>
+          <label class="toolbar-select toolbar-select--compact">
+            <span>Direction</span>
+            <select data-ui-filter="direction" data-focus-key="sort-direction">
+              <option value="desc" ${state.sortDirection === 'desc' ? 'selected' : ''}>Newest first</option>
+              <option value="asc" ${state.sortDirection === 'asc' ? 'selected' : ''}>Oldest first</option>
+            </select>
+          </label>
+          <button
+            class="button button-secondary toolbar-mode-button ${state.multiSelectMode ? 'button-active' : ''}"
+            type="button"
+            data-action="toggle-multi-select"
+            data-onboarding-target="bulk-actions"
+            ${keyHintAttrs('S')}
+          >
+            ${state.multiSelectMode ? 'Done selecting' : ultraCompactActive ? 'Select' : 'Select multiple'}
+          </button>
+        </div>
+      </div>
+
+      ${
+        state.selectedIds.length
+          ? `
+            <div class="bulk-bar">
+              <div class="bulk-bar__copy">
+                <p class="eyebrow">Bulk actions</p>
+                <strong>${buildAnimatedValue(String(state.selectedIds.length), 'bulk-count', { tag: 'span', className: 'inline-count' })} selected</strong>
+              </div>
+              <div class="bulk-bar__actions">
+                <button class="button button-secondary" type="button" data-action="bulk-mark-touched">Mark touched</button>
+                <button class="button button-secondary" type="button" data-action="bulk-add-tag">Add tag</button>
+                <button class="button button-secondary" type="button" data-action="bulk-remove-tag">Remove tag</button>
+                <button class="button button-secondary" type="button" data-action="bulk-add-group">Add group</button>
+                <button class="button button-secondary" type="button" data-action="bulk-remove-group">Remove group</button>
+                <button class="button button-secondary" type="button" data-action="bulk-mass-editor">Mass editor</button>
+                <button class="button button-secondary" type="button" data-action="bulk-archive">Archive</button>
+                <button class="button button-secondary" type="button" data-action="bulk-restore">Restore</button>
+                <button class="button button-secondary" type="button" data-action="clear-selection">Clear</button>
+              </div>
+            </div>
+          `
+          : ''
+      }
+
+      <label class="search-field">
+        <span class="search-label">${ultraCompactActive ? 'Search contacts, tags, groups, notes, and memory' : 'Search by name, notes, memory, tag, group, or socials'}</span>
+        <div class="search-shell">
+          <input
+            data-search
+            data-focus-key="search"
+            id="search-input"
+            type="search"
+            placeholder="${ultraCompactActive ? 'Search contacts, groups, or context' : 'Search your people'}"
+            value="${escapeAttribute(state.query)}"
+            ${keyHintAttrs('/')}
+          />
+          ${
+            state.query
+              ? '<button class="search-action" data-action="clear-search" aria-label="Clear search">Clear</button>'
+              : ''
+          }
+        </div>
+      </label>
+
+      ${
+        visibleRecords.length
+          ? `
+            <div class="record-list-shell ${ultraCompactActive ? 'record-list-shell--ultra' : ''}" data-selection-shell>
+              <div class="selection-rail" data-selection-rail></div>
+              <ul class="${listClassName}">
+                ${visibleRecords.map((record) => buildClassicRecordCard(record, { today, activeSelectedId, ultraCompactActive })).join('')}
+              </ul>
+            </div>
+          `
+          : `
+            <div class="empty-state">
+              <p class="eyebrow">No matches</p>
+              <h3>Nothing fits this view yet.</h3>
+              <p class="empty-copy">Try another filter, group, tag, or search term.</p>
+            </div>
+          `
+      }
+    </section>
+  `
+}
+
+function buildClassicRecordCard(record, { today, activeSelectedId, ultraCompactActive = false }) {
+  const attention = getAttentionState(record, today)
+  const isSelected = activeSelectedId === record.id
+  const isBulkSelected = state.selectedIds.includes(record.id)
+  const latestMemory = record.memories[0]
+  const nextTouch = getNextTouchDate(record)
+  const compactListActive = state.settings.compact || ultraCompactActive
+  const recordClassName = ['record-card', isSelected ? 'selected' : '', ultraCompactActive ? 'record-card--ultra' : '']
+    .filter(Boolean)
+    .join(' ')
+  const inlineTags = [...record.groups.slice(0, 1), ...record.tags.slice(0, 2)]
+
+  return `
+    <li>
+      <button class="${recordClassName}" data-select="${record.id}">
+        <div class="record-top">
+          <div class="record-person">
+            ${
+              state.multiSelectMode
+                ? `
+                  <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                    <span></span>
+                  </span>
+                `
+                : ''
+            }
+            ${buildRecordAvatar(record, 'small')}
+            <div>
+              <p class="record-tier">${tierMeta[record.tier].label}</p>
+              <h3>${escapeHtml(record.name)}</h3>
+            </div>
+          </div>
+          <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+        </div>
+
+        ${
+          ultraCompactActive
+            ? `
+              <div class="record-card__meta-line">
+                <span class="record-meta-pill">${escapeHtml(record.city || 'No city')}</span>
+                <span class="record-meta-pill">${escapeHtml(record.touchStyle)}</span>
+                ${
+                  inlineTags.length
+                    ? inlineTags.map((item) => `<span class="record-meta-pill">${escapeHtml(item)}</span>`).join('')
+                    : '<span class="record-meta-pill">No tags yet</span>'
+                }
+              </div>
+              <div class="compact-inline compact-inline--ultra">
+                <strong>Next ${formatShortDate(nextTouch)}</strong>
+                <span>Last ${formatShortDate(record.lastContact)}</span>
+                <span>${formatReconnectTiming(attention.daysUntil)}</span>
+                <span>${record.memories.length} memories</span>
+                <span>${escapeHtml(truncate(record.focus || 'No focus note yet.', 58))}</span>
+              </div>
+            `
+            : compactListActive
+              ? `
+                <div class="compact-inline compact-inline--minimal">
+                  <strong>${formatShortDate(nextTouch)}</strong>
+                  <span>${formatReconnectTiming(attention.daysUntil)}</span>
+                </div>
+              `
+              : `
+                <p class="record-focus">${escapeHtml(record.focus || 'No focus note added yet.')}</p>
+
+                <div class="record-meta">
+                  <span>${escapeHtml(record.city || 'No city set')}</span>
+                  <span>Added ${formatShortDate(record.createdAt)}</span>
+                  <span>Last ${formatShortDate(record.lastContact)}</span>
+                  <span>Next ${formatShortDate(nextTouch)}</span>
+                  <span>${record.touchStyle}</span>
+                  <span>${record.memories.length} memories</span>
+                </div>
+
+                ${
+                  record.groups.length
+                    ? `<div class="group-row">${record.groups.map((group) => `<span class="tag group-tag">${escapeHtml(group)}</span>`).join('')}</div>`
+                    : ''
+                }
+
+                <div class="tag-row">
+                  ${
+                    record.tags.length
+                      ? record.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+                      : '<span class="tag ghost">No tags yet</span>'
+                  }
+                </div>
+
+                ${
+                  latestMemory
+                    ? `
+                      <div class="mini-memory-row">
+                        <span class="mini-memory">Latest memory · ${formatShortDate(latestMemory.date)}</span>
+                        <span class="mini-memory">${escapeHtml(truncate(latestMemory.text, 88))}</span>
+                      </div>
+                    `
+                    : ''
+                }
+              `
+        }
+      </button>
+    </li>
+  `
+}
+
+function buildCursorChrome() {
+  if (!window.matchMedia('(pointer:fine)').matches) {
+    return ''
+  }
+
+  return `
+    <div class="cursor-chrome" aria-hidden="true">
+      <div class="cursor-ring" data-cursor-ring></div>
+      <div class="cursor-dot" data-cursor-dot></div>
+    </div>
+  `
+}
+
+function buildBulkEditorPanel() {
+  if (!state.bulkEditorOpen) {
+    return ''
+  }
+
+  const touchStyles = getTouchStyles()
+  const selectedCount = state.selectedIds.length
+
+  return `
+    <div class="brief-overlay open" data-overlay="bulk-editor">
+      <section class="brief-panel bulk-editor-panel" role="dialog" aria-modal="true" aria-label="Bulk editor">
+        <div class="brief-panel__header">
+          <div>
+            <p class="eyebrow">Bulk editor</p>
+            <h2>Edit ${selectedCount} ${selectedCount === 1 ? 'person' : 'people'} together.</h2>
+            <p class="brief-intro">Use this for city changes, tag sweeps, group cleanup, or one tidy batch instead of six repetitive clicks.</p>
+          </div>
+          <button class="settings-close" data-action="close-bulk-editor" aria-label="Close bulk editor">Close</button>
+        </div>
+
+        <div class="form-grid form-grid--settings">
+          <label>
+            <span>Set tier</span>
+            <select data-bulk-field="tier">
+              <option value="">Leave unchanged</option>
+              ${tierOrder.map((tier) => `<option value="${tier}" ${state.bulkDraft.tier === tier ? 'selected' : ''}>${tierMeta[tier].label}</option>`).join('')}
+            </select>
+          </label>
+
+          <label>
+            <span>Set touch style</span>
+            <select data-bulk-field="touchStyle">
+              <option value="">Leave unchanged</option>
+              ${touchStyles.map((style) => `<option value="${escapeAttribute(style)}" ${state.bulkDraft.touchStyle === style ? 'selected' : ''}>${escapeHtml(style)}</option>`).join('')}
+            </select>
+          </label>
+
+          <label>
+            <span>Set city</span>
+            <input data-bulk-field="city" type="text" value="${escapeAttribute(state.bulkDraft.city)}" placeholder="Leave blank to skip" />
+          </label>
+
+          <label>
+            <span>Set cadence in days</span>
+            <input data-bulk-field="cadenceDays" type="number" min="1" value="${escapeAttribute(state.bulkDraft.cadenceDays)}" placeholder="Leave blank to skip" />
+          </label>
+
+          <label>
+            <span>Add tag</span>
+            <input data-bulk-field="addTag" type="text" value="${escapeAttribute(state.bulkDraft.addTag)}" placeholder="family, founder, travel..." />
+          </label>
+
+          <label>
+            <span>Remove tag</span>
+            <input data-bulk-field="removeTag" type="text" value="${escapeAttribute(state.bulkDraft.removeTag)}" placeholder="Tag to strip out..." />
+          </label>
+
+          <label>
+            <span>Add group</span>
+            <input data-bulk-field="addGroup" type="text" value="${escapeAttribute(state.bulkDraft.addGroup)}" placeholder="dubai, founders, family..." />
+          </label>
+
+          <label>
+            <span>Remove group</span>
+            <input data-bulk-field="removeGroup" type="text" value="${escapeAttribute(state.bulkDraft.removeGroup)}" placeholder="Group to strip out..." />
+          </label>
+        </div>
+
+        <div class="brief-actions">
+          <button class="button button-primary" type="button" data-action="apply-bulk-editor">Apply changes</button>
+          <button class="button button-secondary" type="button" data-action="close-bulk-editor">Cancel</button>
+        </div>
+      </section>
+    </div>
   `
 }
 
@@ -2495,6 +4408,433 @@ function buildPowerDock() {
   `
 }
 
+function focusAfterRender(focusKey) {
+  state.commandPaletteOpen = false
+  state.commandQuery = ''
+  state.commandPaletteIndex = 0
+  render({ preserveFocus: false })
+  window.requestAnimationFrame(() => {
+    focusByKey(focusKey)
+  })
+}
+
+function pulseBodyClass(className, duration = 420) {
+  if (!className || document.body.classList.contains('motion-off')) {
+    return
+  }
+
+  const previousTimer = bodyPulseTimers.get(className)
+  if (previousTimer) {
+    window.clearTimeout(previousTimer)
+  }
+
+  document.body.classList.remove(className)
+  void document.body.offsetWidth
+  document.body.classList.add(className)
+
+  const timer = window.setTimeout(() => {
+    document.body.classList.remove(className)
+    bodyPulseTimers.delete(className)
+  }, duration)
+
+  bodyPulseTimers.set(className, timer)
+}
+
+function commitUiMutation(mutator, options = {}) {
+  const {
+    preserveFocus = false,
+    pulseClass = '',
+    pulseDuration = 420,
+  } = options
+
+  const applyMutation = () => {
+    mutator()
+    render({ preserveFocus })
+  }
+
+  if (pulseClass) {
+    pulseBodyClass(pulseClass, pulseDuration)
+  }
+
+  if (!state.settings.motion || typeof document.startViewTransition !== 'function') {
+    applyMutation()
+    return
+  }
+
+  try {
+    document.startViewTransition(() => {
+      applyMutation()
+    })
+  } catch {
+    applyMutation()
+  }
+}
+
+function openSettingsTab(tab) {
+  commitUiMutation(() => {
+    state.commandPaletteOpen = false
+    state.commandQuery = ''
+    state.commandPaletteIndex = 0
+    const opening = !state.settingsOpen
+    state.settingsOpen = true
+    state.settingsTab = tab
+    if (opening) {
+      state.settingsAnimating = true
+      if (settingsAnimationTimer) {
+        window.clearTimeout(settingsAnimationTimer)
+      }
+      settingsAnimationTimer = window.setTimeout(() => {
+        state.settingsAnimating = false
+        settingsAnimationTimer = null
+      }, 320)
+    }
+  }, { pulseClass: 'ui-settings-pulse', pulseDuration: 460 })
+}
+
+function revealSettingsTab(tab) {
+  commitUiMutation(() => {
+    state.settingsTab = tab
+  }, { pulseClass: 'ui-settings-pulse', pulseDuration: 360 })
+}
+
+function closeSettingsPanel() {
+  commitUiMutation(() => {
+    state.settingsOpen = false
+    state.settingsAnimating = false
+  }, { pulseClass: 'ui-settings-pulse', pulseDuration: 300 })
+}
+
+function toggleCompactMode() {
+  commitUiMutation(() => {
+    state.settings.compact = !state.settings.compact
+    persistSettings()
+    animateCompactToggle()
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 520 })
+}
+
+function toggleUltraCompactMode() {
+  commitUiMutation(() => {
+    state.settings.ultraCompact = !state.settings.ultraCompact
+    if (state.settings.ultraCompact) {
+      state.settings.workspaceMode = 'classic'
+      state.settings.tabView = false
+    }
+    persistSettings()
+    animateCompactToggle()
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 560 })
+}
+
+function setWorkspaceMode(mode) {
+  commitUiMutation(() => {
+    state.settings.workspaceMode = workspaceModes.includes(mode) ? mode : 'classic'
+    state.settings.tabView = state.settings.workspaceMode === 'tab'
+    persistSettings()
+    animateCompactToggle()
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 520 })
+}
+
+function setTabLayout(layout) {
+  commitUiMutation(() => {
+    state.settings.tabLayout = ['cards', 'kanban'].includes(layout) ? layout : 'cards'
+    persistSettings()
+  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420 })
+}
+
+function setMapLayer(layer) {
+  commitUiMutation(() => {
+    state.settings.mapLayer = ['dark', 'satellite'].includes(layer) ? layer : 'dark'
+    persistSettings()
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 420 })
+}
+
+function setTodayPanelMode(mode) {
+  commitUiMutation(() => {
+    state.todayPanelMode = mode === 'queue' ? 'queue' : 'today'
+  }, { pulseClass: 'ui-panel-pulse', pulseDuration: 360 })
+}
+
+function toggleMapLocationPanel(key) {
+  if (!key) {
+    return
+  }
+
+  commitUiMutation(() => {
+    state.mapLocationPanels[key] = !isMapLocationPanelOpen(key)
+  }, { pulseClass: 'ui-panel-pulse', pulseDuration: 320 })
+}
+
+function toggleMultiSelectMode() {
+  commitUiMutation(() => {
+    state.multiSelectMode = !state.multiSelectMode
+    if (!state.multiSelectMode) {
+      state.selectedIds = []
+      state.bulkEditorOpen = false
+    } else {
+      triggerBulkModePulse()
+    }
+  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420 })
+}
+
+function toggleLeftRail() {
+  commitUiMutation(() => {
+    state.settings.leftRailVisible = !state.settings.leftRailVisible
+    persistSettings()
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 460 })
+}
+
+function toggleRightRail() {
+  commitUiMutation(() => {
+    state.settings.rightRailVisible = !state.settings.rightRailVisible
+    persistSettings()
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 460 })
+}
+
+function openBulkEditor(mode = 'all') {
+  if (!state.selectedIds.length) {
+    return
+  }
+
+  state.bulkEditorMode = mode
+  state.bulkEditorOpen = true
+  render({ preserveFocus: false })
+}
+
+function closeBulkEditor() {
+  state.bulkEditorOpen = false
+  state.bulkEditorMode = 'all'
+  render({ preserveFocus: false })
+}
+
+function openProfilePanel() {
+  if (profileCloseTimer) {
+    window.clearTimeout(profileCloseTimer)
+    profileCloseTimer = null
+  }
+  state.profileOpen = true
+  state.profileClosing = false
+  render({ preserveFocus: false })
+}
+
+function toggleProfilePanel() {
+  if (state.profileOpen || state.profileClosing) {
+    closeProfilePanel()
+    return
+  }
+
+  openProfilePanel()
+}
+
+function toggleBriefPanel() {
+  state.briefOpen = !state.briefOpen
+  render({ preserveFocus: false })
+}
+
+function toggleQuickCapturePanel(mode = 'memory') {
+  if (state.quickCaptureOpen) {
+    state.quickCaptureOpen = false
+    render({ preserveFocus: false })
+    return
+  }
+
+  state.quickCaptureOpen = true
+  state.quickCaptureMode = mode
+  state.quickCaptureRecordId = state.selectedId || state.quickCaptureRecordId
+  render({ preserveFocus: false })
+}
+
+function toggleNetworkPanel() {
+  state.networkOpen = !state.networkOpen
+  render({ preserveFocus: false })
+}
+
+function replayTutorial() {
+  state.commandPaletteOpen = false
+  state.commandQuery = ''
+  state.commandPaletteIndex = 0
+  state.settingsOpen = false
+  state.settingsAnimating = false
+  state.settings.tutorialSeen = false
+  state.onboardingStep = 0
+  state.onboardingOpen = true
+  prepareOnboardingStep()
+  persistSettings()
+  render({ preserveFocus: false })
+}
+
+function prepareOnboardingStep() {
+  const step = onboardingSteps[state.onboardingStep] || onboardingSteps[0]
+  if (!step) {
+    return
+  }
+
+  if (step.target && /left-rail|module/.test(step.target)) {
+    state.settings.leftRailVisible = true
+  }
+
+  if (step.target && /inspector/.test(step.target)) {
+    state.settings.workspaceMode = 'classic'
+    state.settings.rightRailVisible = true
+  }
+
+  if (step.target === 'inspector-basics') {
+    state.inspectorPanels.basics = true
+  }
+}
+
+function runCommandById(commandId) {
+  const command = getCommandPaletteCommands(getSelectedRecord()).find((entry) => entry.id === commandId)
+  if (!command) {
+    return
+  }
+  state.commandPaletteOpen = false
+  state.commandQuery = ''
+  state.commandPaletteIndex = 0
+  command.run()
+}
+
+function getCommandPaletteCommands(selectedRecord) {
+  const commands = [
+    { id: 'search', group: 'Jump', label: 'Search roster', shortcut: '/', run: () => focusAfterRender('search') },
+    { id: 'add-person', group: 'Create', label: 'Add person', shortcut: 'N', run: () => addPerson() },
+    { id: 'settings', group: 'Jump', label: 'Open settings', shortcut: 'G', run: () => openSettingsTab('general') },
+    { id: 'shortcuts', group: 'Jump', label: 'Open all keys', shortcut: '?', run: () => openSettingsTab('shortcuts') },
+    { id: 'compact', group: 'View', label: state.settings.compact ? 'Switch to full view' : 'Switch to compact view', shortcut: 'C', run: () => toggleCompactMode() },
+    { id: 'ultra-compact', group: 'View', label: state.settings.ultraCompact ? 'Turn off ultra compact mode' : 'Turn on ultra compact mode', shortcut: '', run: () => toggleUltraCompactMode() },
+    { id: 'classic-view', group: 'View', label: 'Switch to Classic CRM', shortcut: '', run: () => setWorkspaceMode('classic') },
+    { id: 'tab-view', group: 'View', label: 'Switch to Tab view', shortcut: '', run: () => setWorkspaceMode('tab') },
+    { id: 'map-view', group: 'View', label: 'Switch to Map view', shortcut: '', run: () => setWorkspaceMode('map') },
+    { id: 'relationships-view', group: 'View', label: 'Switch to Relationships', shortcut: '', run: () => setWorkspaceMode('relationships') },
+    { id: 'timeline-view', group: 'View', label: 'Switch to Timeline', shortcut: '', run: () => setWorkspaceMode('timeline') },
+    { id: 'toggle-multi', group: 'Select', label: state.multiSelectMode ? 'Finish multi-select' : 'Start multi-select', shortcut: 'S', run: () => toggleMultiSelectMode() },
+    { id: 'bulk-editor', group: 'Select', label: 'Open bulk editor', shortcut: '', run: () => openBulkEditor('all') },
+    { id: 'toggle-left', group: 'Layout', label: state.settings.leftRailVisible ? 'Hide left rail' : 'Show left rail', shortcut: '[', run: () => toggleLeftRail() },
+    { id: 'toggle-right', group: 'Layout', label: state.settings.rightRailVisible ? 'Hide inspector' : 'Show inspector', shortcut: ']', run: () => toggleRightRail() },
+    { id: 'open-today', group: 'Jump', label: 'Open Today queue', shortcut: '', run: () => { state.sidebarPanels.today = true; render({ preserveFocus: false }) } },
+    { id: 'import-csv', group: 'Data', label: 'Import CSV', shortcut: '', run: () => openCsvImportPicker() },
+    { id: 'import-memory', group: 'Data', label: 'Import memory file', shortcut: 'I', run: () => { state.pendingImportMode = 'merge'; openImportPicker() } },
+    { id: 'export-memory', group: 'Data', label: 'Export memory file', shortcut: 'X', run: () => exportMemoryFile() },
+    { id: 'tutorial', group: 'Help', label: 'Replay onboarding', shortcut: '', run: () => replayTutorial() },
+    { id: 'all-people', group: 'Jump', label: 'Go to All people', shortcut: '1', run: () => setFilter('all') },
+    { id: 'attention', group: 'Jump', label: 'Go to Needs attention', shortcut: '2', run: () => setFilter('needs-attention') },
+  ]
+
+  if (selectedRecord) {
+    commands.push(
+      { id: 'mark-touched', group: 'Selected person', label: 'Mark touched today', shortcut: 'M', run: () => { updateSelectedRecord('lastContact', todayStamp()); triggerTouchReward() } },
+      { id: 'meeting-brief', group: 'Selected person', label: 'Open meeting brief', shortcut: 'B', run: () => { state.briefOpen = true; render({ preserveFocus: false }) } },
+      { id: 'quick-capture', group: 'Selected person', label: 'Open quick capture', shortcut: 'Q', run: () => { state.quickCaptureOpen = true; state.quickCaptureMode = 'memory'; state.quickCaptureRecordId = state.selectedId || state.quickCaptureRecordId; render({ preserveFocus: false }) } },
+      { id: 'full-profile', group: 'Selected person', label: 'Open full profile', shortcut: 'P', run: () => openProfilePanel() },
+      { id: 'orbit', group: 'Selected person', label: 'Open orbit', shortcut: 'U', run: () => { state.networkOpen = true; render({ preserveFocus: false }) } },
+      { id: 'archive', group: 'Selected person', label: selectedRecord.archived ? 'Restore person' : 'Archive person', shortcut: 'A', run: () => setSelectedArchived(!selectedRecord.archived) },
+      { id: 'focus-memory', group: 'Selected person', label: 'Focus memory composer', shortcut: 'E', run: () => focusAfterRender('memory-text') },
+      { id: 'focus-tags', group: 'Selected person', label: 'Focus tags', shortcut: 'T', run: () => focusAfterRender('record-tags') },
+      { id: 'focus-context', group: 'Selected person', label: 'Focus active context', shortcut: 'F', run: () => focusAfterRender('record-focus') },
+      { id: 'focus-notes', group: 'Selected person', label: 'Focus notes', shortcut: 'O', run: () => focusAfterRender('record-notes') },
+    )
+  }
+
+  return commands
+}
+
+function getVisibleCommandPaletteCommands(selectedRecord) {
+  const query = normalizePersonKey(state.commandQuery)
+  const commands = getCommandPaletteCommands(selectedRecord)
+  if (!query) {
+    return commands
+  }
+
+  return commands.filter((command) =>
+    [command.label, command.group, command.shortcut]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(query),
+  )
+}
+
+function buildCommandPalettePanel(selectedRecord) {
+  if (!state.commandPaletteOpen) {
+    return ''
+  }
+
+  const commands = getVisibleCommandPaletteCommands(selectedRecord)
+  const activeIndex = Math.min(state.commandPaletteIndex, Math.max(commands.length - 1, 0))
+  const grouped = new Map()
+
+  commands.forEach((command, index) => {
+    const bucket = grouped.get(command.group) || []
+    bucket.push({ ...command, index })
+    grouped.set(command.group, bucket)
+  })
+
+  return `
+    <div class="command-palette-overlay open" data-overlay="command-palette">
+      <section class="command-palette-panel" role="dialog" aria-modal="true" aria-label="Quick actions">
+        <div class="command-palette-header">
+          <div>
+            <p class="eyebrow">Quick actions</p>
+            <h2>Move through Roster fast.</h2>
+          </div>
+          <button class="settings-close" data-action="close-command-palette" aria-label="Close quick actions">Close</button>
+        </div>
+
+        <label class="command-palette-search">
+          <input
+            type="search"
+            data-command-query
+            data-focus-key="command-palette"
+            placeholder="What do you want to do?"
+            value="${escapeAttribute(state.commandQuery)}"
+          />
+        </label>
+
+        <div class="command-palette-list">
+          ${
+            commands.length
+              ? Array.from(grouped.entries())
+                  .map(
+                    ([group, items]) => `
+                      <section class="command-palette-group">
+                        <p class="eyebrow">${escapeHtml(group)}</p>
+                        <div class="command-palette-group__list">
+                          ${items
+                            .map(
+                              (command) => `
+                                <button
+                                  class="command-palette-item ${command.index === activeIndex ? 'is-active' : ''}"
+                                  type="button"
+                                  data-action="run-command"
+                                  data-command-id="${escapeAttribute(command.id)}"
+                                  data-command-index="${command.index}"
+                                >
+                                  <span class="command-palette-item__copy">
+                                    <strong>${escapeHtml(command.label)}</strong>
+                                    <small>${escapeHtml(command.group)}</small>
+                                  </span>
+                                  ${command.shortcut ? `<span class="key-pill">${escapeHtml(command.shortcut)}</span>` : ''}
+                                </button>
+                              `,
+                            )
+                            .join('')}
+                        </div>
+                      </section>
+                    `,
+                  )
+                  .join('')
+              : `
+                <div class="empty-state empty-state--palette">
+                  <p class="eyebrow">No matches</p>
+                  <h3>Nothing matches that action yet.</h3>
+                  <p class="empty-copy">Try “settings”, “map”, “archive”, or “search”.</p>
+                </div>
+              `
+          }
+        </div>
+      </section>
+    </div>
+  `
+}
+
 function handleClick(event) {
   const target = event.target
 
@@ -2502,11 +4842,18 @@ function handleClick(event) {
     return
   }
 
-  const overlay = target.closest('[data-overlay]')
+      const overlay = target.closest('[data-overlay]')
   if (overlay instanceof HTMLElement) {
-    if (overlay.dataset.overlay === 'settings' && !target.closest('.settings-panel')) {
-      state.settingsOpen = false
+    if (overlay.dataset.overlay === 'command-palette' && !target.closest('.command-palette-panel')) {
+      state.commandPaletteOpen = false
+      state.commandQuery = ''
+      state.commandPaletteIndex = 0
       render({ preserveFocus: false })
+      return
+    }
+
+    if (overlay.dataset.overlay === 'settings' && !target.closest('.settings-panel')) {
+      closeSettingsPanel()
       return
     }
 
@@ -2526,10 +4873,33 @@ function handleClick(event) {
       render({ preserveFocus: false })
       return
     }
+
+    if (overlay.dataset.overlay === 'bulk-editor' && !target.closest('.bulk-editor-panel')) {
+      closeBulkEditor()
+      return
+    }
+
+    if (overlay.dataset.overlay === 'network' && !target.closest('.network-panel')) {
+      state.networkOpen = false
+      render({ preserveFocus: false })
+      return
+    }
+
+    if (overlay.dataset.overlay === 'onboarding' && !target.closest('.onboarding-panel')) {
+      state.settings.tutorialSeen = true
+      state.onboardingOpen = false
+      persistSettings()
+      render({ preserveFocus: false })
+      return
+    }
   }
 
   const panelToggle = target.closest('[data-toggle-panel]')
   if (panelToggle instanceof HTMLElement) {
+    if (panelToggle.dataset.toggleBehavior === 'all-inspector') {
+      toggleInspectorEverything()
+      return
+    }
     togglePanel(panelToggle.dataset.togglePanel)
     return
   }
@@ -2542,38 +4912,60 @@ function handleClick(event) {
       case 'add-person':
         addPerson()
         return
-      case 'open-settings':
-        state.settingsOpen = true
-        state.settingsTab = 'general'
+      case 'open-command-palette':
+        state.commandPaletteOpen = true
+        state.commandQuery = ''
+        state.commandPaletteIndex = 0
         render({ preserveFocus: false })
+        window.requestAnimationFrame(() => focusByKey('command-palette'))
+        return
+      case 'close-command-palette':
+        state.commandPaletteOpen = false
+        state.commandQuery = ''
+        state.commandPaletteIndex = 0
+        render({ preserveFocus: false })
+        return
+      case 'run-command':
+        runCommandById(action.dataset.commandId)
+        return
+      case 'open-settings':
+        openSettingsTab('general')
         return
       case 'toggle-compact':
-        state.settings.compact = !state.settings.compact
-        persistSettings()
-        animateCompactToggle()
-        render({ preserveFocus: false })
+        toggleCompactMode()
         return
-      case 'toggle-tab-view':
-        state.settings.tabView = !state.settings.tabView
-        persistSettings()
-        animateCompactToggle()
-        render({ preserveFocus: false })
+      case 'set-workspace-mode':
+        setWorkspaceMode(action.dataset.workspaceMode)
+        return
+      case 'set-tab-layout':
+        setTabLayout(action.dataset.tabLayout)
+        return
+      case 'set-map-layer':
+        setMapLayer(action.dataset.mapLayer)
+        return
+      case 'fit-map':
+        fitRosterMapToVisiblePeople()
         return
       case 'toggle-multi-select':
-        state.multiSelectMode = !state.multiSelectMode
-        if (!state.multiSelectMode) {
-          state.selectedIds = []
-        }
-        render({ preserveFocus: false })
+        toggleMultiSelectMode()
+        return
+      case 'set-today-panel-mode':
+        setTodayPanelMode(action.dataset.todayPanelMode)
+        return
+      case 'toggle-map-location':
+        toggleMapLocationPanel(action.dataset.mapLocationKey)
+        return
+      case 'toggle-left-rail':
+        toggleLeftRail()
+        return
+      case 'toggle-right-rail':
+        toggleRightRail()
         return
       case 'open-shortcuts-tab':
-        state.settingsOpen = true
-        state.settingsTab = 'shortcuts'
-        render({ preserveFocus: false })
+        openSettingsTab('shortcuts')
         return
       case 'close-settings':
-        state.settingsOpen = false
-        render({ preserveFocus: false })
+        closeSettingsPanel()
         return
       case 'reset-roster':
         state.records = cloneInitialRecords()
@@ -2608,6 +5000,7 @@ function handleClick(event) {
         return
       case 'mark-touched':
         updateSelectedRecord('lastContact', todayStamp())
+        triggerTouchReward()
         return
       case 'open-brief':
         state.briefOpen = true
@@ -2630,6 +5023,23 @@ function handleClick(event) {
         state.quickCaptureOpen = false
         render({ preserveFocus: false })
         return
+      case 'open-bulk-editor':
+        openBulkEditor(action.dataset.bulkMode || 'all')
+        return
+      case 'close-bulk-editor':
+        closeBulkEditor()
+        return
+      case 'apply-bulk-editor':
+        applyBulkEditor()
+        return
+      case 'open-network':
+        state.networkOpen = true
+        render({ preserveFocus: false })
+        return
+      case 'close-network':
+        state.networkOpen = false
+        render({ preserveFocus: false })
+        return
       case 'set-quick-capture-mode':
         state.quickCaptureMode = action.dataset.quickCaptureMode || 'memory'
         render({ preserveFocus: false })
@@ -2649,17 +5059,10 @@ function handleClick(event) {
         focusByKey('search')
         return
       case 'focus-memory':
-        focusByKey('memory-text')
+        focusAfterRender('memory-text')
         return
       case 'open-profile':
-        if (profileCloseTimer) {
-          window.clearTimeout(profileCloseTimer)
-          profileCloseTimer = null
-        }
-        state.profileOpen = true
-        state.profileClosing = false
-        state.profileEditOpen = false
-        render({ preserveFocus: false })
+        openProfilePanel()
         return
       case 'close-profile':
         closeProfilePanel()
@@ -2697,11 +5100,68 @@ function handleClick(event) {
         persistSettings()
         render({ preserveFocus: false })
         return
+      case 'add-tier':
+        addCustomTier()
+        return
+      case 'remove-tier':
+        removeCustomTier(action.dataset.tierKey)
+        return
+      case 'remove-global-group':
+        removeGroupEverywhere(action.dataset.groupValue)
+        return
+      case 'remove-global-tag':
+        removeTagEverywhere(action.dataset.tagValue)
+        return
+      case 'rerun-tutorial':
+        state.settings.tutorialSeen = false
+        persistSettings()
+        state.onboardingStep = 0
+        state.onboardingOpen = true
+        render({ preserveFocus: false })
+        return
+      case 'mark-tutorial-seen':
+        state.settings.tutorialSeen = true
+        persistSettings()
+        render({ preserveFocus: false })
+        return
+      case 'skip-tutorial':
+      case 'finish-tutorial':
+        state.settings.tutorialSeen = true
+        state.onboardingOpen = false
+        persistSettings()
+        render({ preserveFocus: false })
+        return
+      case 'next-tutorial-step':
+        state.onboardingStep = Math.min(state.onboardingStep + 1, onboardingSteps.length - 1)
+        prepareOnboardingStep()
+        render({ preserveFocus: false })
+        return
+      case 'prev-tutorial-step':
+        state.onboardingStep = Math.max(state.onboardingStep - 1, 0)
+        prepareOnboardingStep()
+        render({ preserveFocus: false })
+        return
       case 'delete-person':
         removeSelectedRecord()
         return
       case 'bulk-mark-touched':
         runBulkAction('touch')
+        triggerTouchReward()
+        return
+      case 'bulk-add-tag':
+        openBulkEditor('add-tag')
+        return
+      case 'bulk-remove-tag':
+        openBulkEditor('remove-tag')
+        return
+      case 'bulk-add-group':
+        openBulkEditor('add-group')
+        return
+      case 'bulk-remove-group':
+        openBulkEditor('remove-group')
+        return
+      case 'bulk-mass-editor':
+        openBulkEditor('all')
         return
       case 'bulk-archive':
         runBulkAction('archive')
@@ -2817,8 +5277,7 @@ function handleClick(event) {
 
   const settingsTabButton = target.closest('[data-settings-tab]')
   if (settingsTabButton instanceof HTMLElement) {
-    state.settingsTab = settingsTabButton.dataset.settingsTab || 'general'
-    render({ preserveFocus: false })
+    revealSettingsTab(settingsTabButton.dataset.settingsTab || 'general')
     return
   }
 
@@ -2832,7 +5291,11 @@ function handleClick(event) {
 
   const selectButton = target.closest('[data-select]')
   if (selectButton instanceof HTMLElement) {
-    selectRecord(selectButton.dataset.select, { sourceElement: selectButton })
+    const selectedId = selectButton.dataset.select
+    selectRecord(selectedId, { sourceElement: selectButton })
+    if (selectedId && selectButton.dataset.openProfileSelect === 'true' && !state.multiSelectMode) {
+      openProfilePanel()
+    }
   }
 }
 
@@ -2845,6 +5308,13 @@ function handleInput(event) {
 
   if (target.hasAttribute('data-search')) {
     state.query = target.value
+    render()
+    return
+  }
+
+  if (target.dataset.commandQuery != null) {
+    state.commandQuery = target.value
+    state.commandPaletteIndex = 0
     render()
     return
   }
@@ -2954,11 +5424,10 @@ function handleInput(event) {
 
     if (recordField === 'bondHealth') {
       const nextValue = clamp(Number(target.value) || 0, 0, 100)
-      document.querySelectorAll('[data-bond-output], [data-bond-output-inline]').forEach((output) => {
-        if (output instanceof HTMLElement) {
-          output.textContent = `${nextValue}%`
-        }
-      })
+      const fieldHead = target.closest('label')?.querySelector('[data-bond-output], [data-bond-output-inline]')
+      if (fieldHead instanceof HTMLElement) {
+        fieldHead.textContent = `${nextValue}%`
+      }
       updateSelectedRecord(recordField, nextValue, { render: event.type === 'change' })
       return
     }
@@ -2995,16 +5464,47 @@ function handleInput(event) {
         : settingField === 'scale'
           ? clamp(Number(target.value) || defaultSettings.scale, 60, 100)
           : target.value
+      if (settingField === 'workspaceMode') {
+        state.settings.workspaceMode = workspaceModes.includes(target.value) ? target.value : 'classic'
+        state.settings.tabView = state.settings.workspaceMode === 'tab'
+      } else if (settingField === 'ultraCompact' && state.settings.ultraCompact) {
+        state.settings.workspaceMode = 'classic'
+        state.settings.tabView = false
+      }
     }
     persistSettings()
     applySettings()
     startReminderLoop()
-    if (settingField === 'compact' || settingField === 'tabView') {
+    if (settingField === 'compact' || settingField === 'ultraCompact' || settingField === 'tabView' || settingField === 'workspaceMode') {
       animateCompactToggle()
     }
-    if (settingField === 'scale' || settingField === 'compact' || settingField === 'tabView' || reminderField) {
+    if (settingField === 'scale' || settingField === 'compact' || settingField === 'ultraCompact' || settingField === 'tabView' || settingField === 'workspaceMode' || reminderField) {
       render({ preserveFocus: false })
     }
+    return
+  }
+
+  const bulkField = target.dataset.bulkField
+  if (bulkField) {
+    state.bulkDraft[bulkField] = target.value
+    return
+  }
+
+  const featureField = target.dataset.featureField
+  if (featureField) {
+    state.settings.features[featureField] = target instanceof HTMLInputElement ? target.checked : Boolean(target.value)
+    if (featureField === 'tabViewToggle' && !state.settings.features[featureField]) {
+      state.settings.tabView = false
+      state.settings.workspaceMode = 'classic'
+    }
+    if (featureField === 'compactToggle' && !state.settings.features[featureField]) {
+      state.settings.compact = false
+    }
+    if (featureField === 'shortcutDock' && !state.settings.features[featureField]) {
+      state.settings.hints = false
+    }
+    persistSettings()
+    render({ preserveFocus: false })
     return
   }
 
@@ -3029,6 +5529,12 @@ function handleInput(event) {
     }
 
     persistSettings()
+  }
+
+  const tierDraftField = target.dataset.tierDraftField
+  if (tierDraftField) {
+    state.tierDraft[tierDraftField] = target.value
+    return
   }
 
   const quickCaptureField = target.dataset.quickCaptureField
@@ -3120,10 +5626,55 @@ function handleKeydown(event) {
 
   if ((event.metaKey || event.ctrlKey) && event.key === ',') {
     event.preventDefault()
-    state.settingsOpen = true
-    state.settingsTab = 'general'
-    render({ preserveFocus: false })
+    openSettingsTab('general')
     return
+  }
+
+  if ((event.metaKey || event.ctrlKey) && key === 'k') {
+    event.preventDefault()
+    state.commandPaletteOpen = !state.commandPaletteOpen
+    state.commandQuery = ''
+    state.commandPaletteIndex = 0
+    render({ preserveFocus: false })
+    if (state.commandPaletteOpen) {
+      window.requestAnimationFrame(() => focusByKey('command-palette'))
+    }
+    return
+  }
+
+  if (state.commandPaletteOpen) {
+    const visibleCommands = getVisibleCommandPaletteCommands(getSelectedRecord())
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      state.commandPaletteOpen = false
+      state.commandQuery = ''
+      state.commandPaletteIndex = 0
+      render({ preserveFocus: false })
+      return
+    }
+
+    if (event.key === 'ArrowDown' || (!typing && key === 'j')) {
+      event.preventDefault()
+      if (visibleCommands.length) {
+        setCommandPaletteIndex((state.commandPaletteIndex + 1) % visibleCommands.length)
+      }
+      return
+    }
+
+    if (event.key === 'ArrowUp' || (!typing && key === 'k')) {
+      event.preventDefault()
+      if (visibleCommands.length) {
+        setCommandPaletteIndex((state.commandPaletteIndex - 1 + visibleCommands.length) % visibleCommands.length)
+      }
+      return
+    }
+
+    if (event.key === 'Enter' && visibleCommands.length) {
+      event.preventDefault()
+      runCommandById(visibleCommands[state.commandPaletteIndex]?.id)
+      return
+    }
   }
 
   if (event.key === 'Escape' && state.profileOpen) {
@@ -3146,10 +5697,31 @@ function handleKeydown(event) {
     return
   }
 
+  if (event.key === 'Escape' && state.bulkEditorOpen) {
+    event.preventDefault()
+    closeBulkEditor()
+    return
+  }
+
+  if (event.key === 'Escape' && state.networkOpen) {
+    event.preventDefault()
+    state.networkOpen = false
+    render({ preserveFocus: false })
+    return
+  }
+
+  if (event.key === 'Escape' && state.onboardingOpen) {
+    event.preventDefault()
+    state.settings.tutorialSeen = true
+    state.onboardingOpen = false
+    persistSettings()
+    render({ preserveFocus: false })
+    return
+  }
+
   if (event.key === 'Escape' && state.settingsOpen) {
     event.preventDefault()
-    state.settingsOpen = false
-    render({ preserveFocus: false })
+    closeSettingsPanel()
     return
   }
 
@@ -3168,21 +5740,20 @@ function handleKeydown(event) {
       break
     case 'g':
       event.preventDefault()
-      state.settingsOpen = !state.settingsOpen
-      if (state.settingsOpen) {
-        state.settingsTab = 'general'
+      if (state.settingsOpen && state.settingsTab === 'general') {
+        closeSettingsPanel()
+      } else {
+        openSettingsTab('general')
       }
-      render({ preserveFocus: false })
       break
     case '?':
       event.preventDefault()
-      state.settingsOpen = true
-      state.settingsTab = 'shortcuts'
-      render({ preserveFocus: false })
+      openSettingsTab('shortcuts')
       break
     case 'm':
       event.preventDefault()
       updateSelectedRecord('lastContact', todayStamp())
+      triggerTouchReward()
       break
     case 'a':
       event.preventDefault()
@@ -3190,50 +5761,60 @@ function handleKeydown(event) {
       break
     case 'p':
       event.preventDefault()
-      if (profileCloseTimer) {
-        window.clearTimeout(profileCloseTimer)
-        profileCloseTimer = null
-      }
-      state.profileOpen = true
-      state.profileClosing = false
-      render({ preserveFocus: false })
+      toggleProfilePanel()
       break
     case 'e':
       event.preventDefault()
-      focusByKey('memory-text')
+      focusAfterRender('memory-text')
       break
     case 'q':
       event.preventDefault()
-      state.quickCaptureOpen = true
-      state.quickCaptureMode = 'memory'
-      state.quickCaptureRecordId = state.selectedId || state.quickCaptureRecordId
-      render({ preserveFocus: false })
+      toggleQuickCapturePanel('memory')
       break
     case 'b':
       event.preventDefault()
-      state.briefOpen = true
-      render({ preserveFocus: false })
+      toggleBriefPanel()
+      break
+    case 'c':
+      event.preventDefault()
+      toggleCompactMode()
       break
     case 't':
       event.preventDefault()
-      focusByKey('record-tags')
+      focusAfterRender('record-tags')
       break
     case 'f':
       event.preventDefault()
-      focusByKey('record-focus')
+      focusAfterRender('record-focus')
       break
     case 'o':
       event.preventDefault()
-      focusByKey('record-notes')
+      focusAfterRender('record-notes')
       break
     case 'i':
       event.preventDefault()
       state.pendingImportMode = 'merge'
       openImportPicker()
       break
+    case 'u':
+      event.preventDefault()
+      toggleNetworkPanel()
+      break
+    case 's':
+      event.preventDefault()
+      toggleMultiSelectMode()
+      break
     case 'x':
       event.preventDefault()
       exportMemoryFile()
+      break
+    case '[':
+      event.preventDefault()
+      toggleLeftRail()
+      break
+    case ']':
+      event.preventDefault()
+      toggleRightRail()
       break
     case 'j':
     case 'arrowdown':
@@ -3270,21 +5851,29 @@ function handleKeydown(event) {
       setFilter('acquaintance')
       break
     default:
+      if ((event.metaKey || event.ctrlKey) && key === 'a') {
+        event.preventDefault()
+        const visible = getVisibleRecords(state.records, state.query, state.filter, todayStamp())
+        state.multiSelectMode = true
+        state.selectedIds = visible.map((record) => record.id)
+        render({ preserveFocus: false })
+      }
       break
   }
 }
 
 function setFilter(filter) {
-  state.filter = filter
-  if (tierMeta[filter]) {
-    state.expandedTier = filter
-  }
-  const visible = getVisibleRecords(state.records, state.query, state.filter, todayStamp())
-  if (visible.length && !visible.some((record) => record.id === state.selectedId)) {
-    state.selectedId = visible[0].id
-    restoreDraftsForSelected(state.selectedId)
-  }
-  render({ preserveFocus: false })
+  commitUiMutation(() => {
+    state.filter = filter
+    if (tierMeta[filter]) {
+      state.expandedTier = filter
+    }
+    const visible = getVisibleRecords(state.records, state.query, state.filter, todayStamp())
+    if (visible.length && !visible.some((record) => record.id === state.selectedId)) {
+      state.selectedId = visible[0].id
+      restoreDraftsForSelected(state.selectedId)
+    }
+  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420 })
 }
 
 function togglePanel(token) {
@@ -3294,15 +5883,48 @@ function togglePanel(token) {
   }
 
   if (scope === 'sidebar' && key in state.sidebarPanels) {
-    state.sidebarPanels[key] = !state.sidebarPanels[key]
-    render({ preserveFocus: false })
+    commitUiMutation(() => {
+      state.sidebarPanels[key] = !state.sidebarPanels[key]
+    }, { pulseClass: 'ui-panel-pulse', pulseDuration: 340 })
     return
   }
 
   if (scope === 'inspector' && key in state.inspectorPanels) {
-    state.inspectorPanels[key] = !state.inspectorPanels[key]
-    render({ preserveFocus: false })
+    commitUiMutation(() => {
+      state.inspectorPanels[key] = !state.inspectorPanels[key]
+    }, { pulseClass: 'ui-panel-pulse', pulseDuration: 340 })
   }
+}
+
+function toggleInspectorEverything() {
+  commitUiMutation(() => {
+    const nextState = !Object.values(state.inspectorPanels).every(Boolean)
+    state.inspectorPanels = Object.fromEntries(
+      Object.keys(state.inspectorPanels).map((key) => [key, nextState]),
+    )
+  }, { pulseClass: 'ui-panel-pulse', pulseDuration: 380 })
+}
+
+function triggerTouchReward() {
+  document.body.classList.remove('touch-reward')
+  void document.body.offsetWidth
+  document.body.classList.add('touch-reward')
+  if (touchRewardTimer) {
+    window.clearTimeout(touchRewardTimer)
+  }
+  touchRewardTimer = window.setTimeout(() => {
+    document.body.classList.remove('touch-reward')
+    touchRewardTimer = null
+  }, 900)
+}
+
+function triggerBulkModePulse() {
+  document.body.classList.remove('bulk-mode-pulse')
+  void document.body.offsetWidth
+  document.body.classList.add('bulk-mode-pulse')
+  window.setTimeout(() => {
+    document.body.classList.remove('bulk-mode-pulse')
+  }, 520)
 }
 
 function closeProfilePanel() {
@@ -3343,7 +5965,28 @@ function selectRecord(id, options = {}) {
   state.selectedId = id
   state.quickCaptureRecordId = id
   restoreDraftsForSelected(id)
-  updateSelectionUI({ sourceElement: options.sourceElement })
+  const workspaceMode = getWorkspaceMode()
+
+  if (workspaceMode === 'map') {
+    revealMapLocationPanelsForRecord(id)
+  }
+
+  if (workspaceMode === 'classic') {
+    updateSelectionUI({ sourceElement: options.sourceElement })
+  } else {
+    render({ preserveFocus: false })
+  }
+}
+
+function revealMapLocationPanelsForRecord(id) {
+  const group = getVisibleLocationGroups(todayStamp()).find((entry) => entry.records.some((record) => record.id === id))
+  if (!group) {
+    return
+  }
+
+  const region = resolveLocationRegion(group.city)
+  state.mapLocationPanels[`region:${region.key}`] = true
+  state.mapLocationPanels[`city:${group.key}`] = true
 }
 
 function moveSelection(direction) {
@@ -3362,7 +6005,11 @@ function moveSelection(direction) {
   state.selectedId = visible[nextIndex].id
   state.quickCaptureRecordId = state.selectedId
   restoreDraftsForSelected(state.selectedId)
-  updateSelectionUI({ scrollIntoView: true })
+  if (getWorkspaceMode() === 'classic') {
+    updateSelectionUI({ scrollIntoView: true })
+  } else {
+    render({ preserveFocus: false })
+  }
 }
 
 function addPerson() {
@@ -3410,11 +6057,29 @@ function toggleBulkSelection(id) {
     : [...state.selectedIds, id]
 
   render({ preserveFocus: false })
+  window.requestAnimationFrame(() => {
+    pulseElement(app?.querySelector(`[data-select="${id}"]`) || null)
+  })
 }
 
 function runBulkAction(action) {
   if (!state.selectedIds.length) {
     return
+  }
+
+  const selectedRecords = state.records.filter((record) => state.selectedIds.includes(record.id))
+  if (action === 'archive') {
+    const warning = buildBulkArchiveMessage(selectedRecords, true)
+    if (warning && !window.confirm(warning)) {
+      return
+    }
+  }
+
+  if (action === 'restore') {
+    const warning = buildBulkArchiveMessage(selectedRecords, false)
+    if (warning && !window.confirm(warning)) {
+      return
+    }
   }
 
   state.records = state.records.map((record) => {
@@ -3441,13 +6106,76 @@ function runBulkAction(action) {
   render({ preserveFocus: false })
 }
 
+function buildRecordRiskSummary(record) {
+  const notes = []
+
+  if (record.tier && record.tier !== 'acquaintance') {
+    notes.push(`they are in ${tierMeta[record.tier]?.label || record.tier}`)
+  }
+  if (record.groups?.length) {
+    notes.push(`${record.groups.length} group${record.groups.length === 1 ? '' : 's'}`)
+  }
+  if (record.tags?.length) {
+    notes.push(`${record.tags.length} tag${record.tags.length === 1 ? '' : 's'}`)
+  }
+  if (record.memories?.length) {
+    notes.push(`${record.memories.length} memor${record.memories.length === 1 ? 'y' : 'ies'}`)
+  }
+  if (record.relatedIds?.length) {
+    notes.push(`${record.relatedIds.length} linked relationship${record.relatedIds.length === 1 ? '' : 's'}`)
+  }
+
+  return notes
+}
+
+function buildArchiveMessage(record, archived) {
+  if (!record) {
+    return ''
+  }
+
+  const details = buildRecordRiskSummary(record)
+  if (archived) {
+    return details.length
+      ? `Archive ${record.name}?\n\nThis is reversible and you can restore them later.\n\nRoster is asking because ${details.join(', ')}.`
+      : `Archive ${record.name}?\n\nThis is reversible and you can restore them later from Archived.`
+  }
+
+  return `Restore ${record.name} to the active roster?`
+}
+
+function buildDeleteMessage(record) {
+  if (!record) {
+    return ''
+  }
+
+  const details = buildRecordRiskSummary(record)
+  return details.length
+    ? `Delete ${record.name} permanently?\n\nThis cannot be undone.\n\nRoster is asking because ${details.join(', ')}.`
+    : `Delete ${record.name} permanently?\n\nThis cannot be undone.`
+}
+
+function buildBulkArchiveMessage(records, archived) {
+  if (!records.length) {
+    return ''
+  }
+
+  const richRecords = records.filter((record) => buildRecordRiskSummary(record).length)
+  if (archived) {
+    return richRecords.length
+      ? `Archive ${records.length} people?\n\nThis is reversible and you can restore them later.\n\n${richRecords.length} of them already have tiers, tags, groups, memories, or linked people.`
+      : `Archive ${records.length} people?\n\nThis is reversible and you can restore them later.`
+  }
+
+  return `Restore ${records.length} ${records.length === 1 ? 'person' : 'people'} to the active roster?`
+}
+
 function removeSelectedRecord() {
   const record = getSelectedRecord()
   if (!record) {
     return
   }
 
-  if (!window.confirm(`Remove ${record.name} from your CRM?`)) {
+  if (!window.confirm(buildDeleteMessage(record))) {
     return
   }
 
@@ -3564,9 +6292,7 @@ async function importCsvFile(file) {
       rows,
       mapping: inferCsvMapping(headers),
     }
-    state.settingsOpen = true
-    state.settingsTab = 'data'
-    render({ preserveFocus: false })
+    openSettingsTab('data')
   } catch (error) {
     window.alert(`CSV import failed.\n\n${error instanceof Error ? error.message : String(error)}`)
   }
@@ -3581,9 +6307,7 @@ async function importActivityFile(file) {
     const text = await file.text()
     const review = buildActivityImportReviewState(file.name, text)
     state.activityImportReview = review
-    state.settingsOpen = true
-    state.settingsTab = 'data'
-    render({ preserveFocus: false })
+    openSettingsTab('data')
   } catch (error) {
     window.alert(`Activity import failed.\n\n${error instanceof Error ? error.message : String(error)}`)
   }
@@ -3641,8 +6365,8 @@ function applyCsvImportReview() {
   restoreDraftsForSelected(state.selectedId)
   const duplicateGroups = getDuplicateGroups(state.records)
   if (duplicateGroups.length) {
-    state.settingsOpen = true
-    state.settingsTab = 'data'
+    openSettingsTab('data')
+    return
   }
   render({ preserveFocus: false })
 }
@@ -3730,6 +6454,7 @@ function commitQuickCapture() {
         : entry,
     )
     persistRecords()
+    triggerTouchReward()
     render({ preserveFocus: false })
     return
   }
@@ -3795,6 +6520,10 @@ function setSelectedArchived(archived) {
     return
   }
 
+  if (!window.confirm(buildArchiveMessage(record, archived))) {
+    return
+  }
+
   state.records = state.records.map((entry) =>
     entry.id === record.id
       ? {
@@ -3812,6 +6541,90 @@ function setSelectedArchived(archived) {
   persistRecords()
   restoreDraftsForSelected(state.selectedId)
   render({ preserveFocus: false })
+}
+
+function applyBulkEditor() {
+  if (!state.selectedIds.length) {
+    closeBulkEditor()
+    return
+  }
+
+  const nextTier = state.bulkDraft.tier
+  const nextTouchStyle = normalizeTouchStyle(state.bulkDraft.touchStyle)
+  const nextCity = String(state.bulkDraft.city || '').trim()
+  const nextCadence = Math.max(1, Number(state.bulkDraft.cadenceDays) || 0)
+  const addTag = normalizeTag(state.bulkDraft.addTag)
+  const removeTag = normalizeTag(state.bulkDraft.removeTag)
+  const addGroup = normalizeGroup(state.bulkDraft.addGroup)
+  const removeGroup = normalizeGroup(state.bulkDraft.removeGroup)
+
+  state.records = state.records.map((record) => {
+    if (!state.selectedIds.includes(record.id)) {
+      return record
+    }
+
+    let nextRecord = { ...record }
+
+    if (nextTier) {
+      nextRecord.tier = nextTier
+    }
+    if (nextTouchStyle) {
+      nextRecord.touchStyle = nextTouchStyle
+    }
+    if (nextCity) {
+      nextRecord.city = nextCity
+    }
+    if (nextCadence) {
+      nextRecord.cadenceDays = nextCadence
+    }
+    if (addTag && !nextRecord.tags.includes(addTag)) {
+      nextRecord.tags = [...nextRecord.tags, addTag].sort((a, b) => a.localeCompare(b))
+    }
+    if (removeTag) {
+      nextRecord.tags = nextRecord.tags.filter((tag) => tag !== removeTag)
+    }
+    if (addGroup && !nextRecord.groups.includes(addGroup)) {
+      nextRecord.groups = [...nextRecord.groups, addGroup].sort((a, b) => a.localeCompare(b))
+    }
+    if (removeGroup) {
+      nextRecord.groups = nextRecord.groups.filter((group) => group !== removeGroup)
+    }
+
+    return standardizeRecord(nextRecord)
+  })
+
+  state.bulkDraft = {
+    tier: '',
+    city: '',
+    touchStyle: '',
+    cadenceDays: '',
+    addTag: '',
+    removeTag: '',
+    addGroup: '',
+    removeGroup: '',
+  }
+  persistRecords()
+  closeBulkEditor()
+}
+
+function setCommandPaletteIndex(nextIndex) {
+  state.commandPaletteIndex = nextIndex
+
+  const panel = app?.querySelector('.command-palette-panel')
+  if (!(panel instanceof HTMLElement)) {
+    render({ preserveFocus: false })
+    return
+  }
+
+  const items = Array.from(panel.querySelectorAll('.command-palette-item'))
+  items.forEach((item, index) => {
+    item.classList.toggle('is-active', index === nextIndex)
+  })
+
+  const activeItem = items[nextIndex]
+  if (activeItem instanceof HTMLElement) {
+    activeItem.scrollIntoView({ block: 'nearest' })
+  }
 }
 
 function addMemory() {
@@ -3874,7 +6687,7 @@ function updateSelectedRecord(key, value, options = {}) {
 
   state.records = state.records.map((record) =>
     record.id === selectedRecord.id
-      ? setPathValue(record, key, value)
+      ? standardizeRecord(setPathValue(record, key, value))
       : record,
   )
 
@@ -3909,7 +6722,7 @@ function addTagToSelectedRecord(tag) {
     return
   }
 
-  if (record.tags.some((entry) => entry.toLowerCase() === nextTag)) {
+  if (record.tags.some((entry) => String(entry || '').toLowerCase() === nextTag)) {
     state.tagDraft = ''
     saveDraftsForSelected()
     render({ preserveFocus: false })
@@ -3942,7 +6755,7 @@ function addGroupToSelectedRecord(group) {
     return
   }
 
-  if (record.groups.some((entry) => entry.toLowerCase() === nextGroup)) {
+  if (record.groups.some((entry) => String(entry || '').toLowerCase() === nextGroup)) {
     state.groupDraft = ''
     saveDraftsForSelected()
     render({ preserveFocus: false })
@@ -4011,7 +6824,7 @@ function addCustomTouchStyle(value) {
   }
 
   const touchStyles = getTouchStyles()
-  if (touchStyles.some((style) => style.toLowerCase() === nextStyle.toLowerCase())) {
+  if (touchStyles.some((style) => String(style || '').toLowerCase() === nextStyle.toLowerCase())) {
     state.touchStyleDraft = ''
     render({ preserveFocus: false })
     focusByKey('setting-touch-style')
@@ -4034,21 +6847,107 @@ function removeCustomTouchStyle(value) {
   }
 
   state.settings.customTouchStyles = (state.settings.customTouchStyles || []).filter(
-    (style) => style.toLowerCase() !== nextStyle.toLowerCase(),
+    (style) => String(style || '').toLowerCase() !== nextStyle.toLowerCase(),
   )
 
-  if (state.settings.defaults.touchStyle.toLowerCase() === nextStyle.toLowerCase()) {
+  if (String(state.settings.defaults.touchStyle || '').toLowerCase() === nextStyle.toLowerCase()) {
     state.settings.defaults.touchStyle = defaultContactSettings.touchStyle
   }
 
   state.records = state.records.map((record) =>
-    record.touchStyle.toLowerCase() === nextStyle.toLowerCase()
+    String(record.touchStyle || '').toLowerCase() === nextStyle.toLowerCase()
       ? { ...record, touchStyle: defaultTouchStyleForTier(record.tier) }
       : record,
   )
 
   persistSettings()
   persistRecords()
+  render({ preserveFocus: false })
+}
+
+function addCustomTier() {
+  const nextTier = normalizeTierDefinition(state.tierDraft)
+  if (!nextTier) {
+    openSettingsTab('extra')
+    return
+  }
+
+  state.settings.customTiers = [...(state.settings.customTiers || []), nextTier]
+  syncTierConfig(state.settings)
+  state.tierDraft = {
+    label: '',
+    cadenceHint: '',
+    description: '',
+  }
+  persistSettings()
+  render({ preserveFocus: false })
+}
+
+function removeCustomTier(key) {
+  if (!key) {
+    return
+  }
+
+  const fallbackTier = defaultContactSettings.tier
+  state.settings.customTiers = (state.settings.customTiers || []).filter((tier) => tier.key !== key)
+  syncTierConfig(state.settings)
+  state.records = state.records.map((record) =>
+    record.tier === key
+      ? {
+          ...record,
+          tier: fallbackTier,
+        }
+      : record,
+  )
+
+  if (state.settings.defaults.tier === key) {
+    state.settings.defaults.tier = fallbackTier
+  }
+
+  if (state.filter === key) {
+    state.filter = 'all'
+  }
+
+  persistSettings()
+  persistRecords()
+  render({ preserveFocus: false })
+}
+
+function removeTagEverywhere(value) {
+  const target = normalizeTag(value)
+  if (!target) {
+    return
+  }
+
+  state.records = state.records.map((record) => ({
+    ...record,
+    tags: record.tags.filter((tag) => tag !== target),
+  }))
+  state.settings.defaults.tags = (state.settings.defaults.tags || []).filter((tag) => tag !== target)
+  if (state.tagFilter === target) {
+    state.tagFilter = ''
+  }
+  persistRecords()
+  persistSettings()
+  render({ preserveFocus: false })
+}
+
+function removeGroupEverywhere(value) {
+  const target = normalizeGroup(value)
+  if (!target) {
+    return
+  }
+
+  state.records = state.records.map((record) => ({
+    ...record,
+    groups: record.groups.filter((group) => group !== target),
+  }))
+  state.settings.defaults.groups = (state.settings.defaults.groups || []).filter((group) => group !== target)
+  if (state.groupFilter === target) {
+    state.groupFilter = ''
+  }
+  persistRecords()
+  persistSettings()
   render({ preserveFocus: false })
 }
 
@@ -4062,7 +6961,7 @@ function removeTagFromSelectedRecord(tag) {
     entry.id === record.id
       ? {
           ...entry,
-          tags: entry.tags.filter((existing) => existing.toLowerCase() !== tag.toLowerCase()),
+          tags: entry.tags.filter((existing) => String(existing || '').toLowerCase() !== tag.toLowerCase()),
         }
       : entry,
   )
@@ -4081,7 +6980,7 @@ function removeGroupFromSelectedRecord(group) {
     entry.id === record.id
       ? {
           ...entry,
-          groups: entry.groups.filter((existing) => existing.toLowerCase() !== group.toLowerCase()),
+          groups: entry.groups.filter((existing) => String(existing || '').toLowerCase() !== group.toLowerCase()),
         }
       : entry,
   )
@@ -4208,6 +7107,330 @@ function compareRecords(first, second, today) {
   return first.name.localeCompare(second.name)
 }
 
+function tonePriority(tone) {
+  if (tone === 'overdue') return 0
+  if (tone === 'soon') return 1
+  return 2
+}
+
+function getCityGroups(records, today) {
+  const groups = new Map()
+
+  for (const record of records) {
+    const city = normalizeLocationLabel(record.city) || 'Unmapped'
+    const key = city.toLowerCase()
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        city,
+        coordinates: getLocationCoordinates(city),
+        records: [],
+      })
+    }
+    groups.get(key).records.push(record)
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      records: group.records.slice().sort((first, second) => compareRecords(first, second, today)),
+    }))
+    .sort((first, second) => {
+      if (first.coordinates && !second.coordinates) return -1
+      if (!first.coordinates && second.coordinates) return 1
+      return first.city.localeCompare(second.city)
+    })
+}
+
+function normalizeLocationLabel(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ')
+}
+
+function getLocationCoordinates(location) {
+  const normalized = normalizeLocationLabel(location).toLowerCase()
+  if (!normalized || normalized === 'unmapped') {
+    return null
+  }
+
+  if (geocodeCache[normalized]?.lat != null && geocodeCache[normalized]?.lng != null) {
+    return {
+      lat: Number(geocodeCache[normalized].lat),
+      lng: Number(geocodeCache[normalized].lng),
+      source: geocodeCache[normalized].source || 'cache',
+    }
+  }
+
+  return resolveCityCoordinates(normalized)
+}
+
+function resolveCityCoordinates(city) {
+  const normalized = String(city || '').toLowerCase()
+  const matches = [
+    { match: 'dubai', lat: 25.2048, lng: 55.2708 },
+    { match: 'abu dhabi', lat: 24.4539, lng: 54.3773 },
+    { match: 'united arab emirates', lat: 23.4241, lng: 53.8478 },
+    { match: 'riyadh', lat: 24.7136, lng: 46.6753 },
+    { match: 'saudi arabia', lat: 23.8859, lng: 45.0792 },
+    { match: 'doha', lat: 25.2854, lng: 51.531 },
+    { match: 'qatar', lat: 25.3548, lng: 51.1839 },
+    { match: 'istanbul', lat: 41.0082, lng: 28.9784 },
+    { match: 'cairo', lat: 30.0444, lng: 31.2357 },
+    { match: 'egypt', lat: 26.8206, lng: 30.8025 },
+    { match: 'paris', lat: 48.8566, lng: 2.3522 },
+    { match: 'france', lat: 46.2276, lng: 2.2137 },
+    { match: 'london', lat: 51.5072, lng: -0.1276 },
+    { match: 'united kingdom', lat: 55.3781, lng: -3.436 },
+    { match: 'berlin', lat: 52.52, lng: 13.405 },
+    { match: 'amsterdam', lat: 52.3676, lng: 4.9041 },
+    { match: 'netherlands', lat: 52.1326, lng: 5.2913 },
+    { match: 'zurich', lat: 47.3769, lng: 8.5417 },
+    { match: 'switzerland', lat: 46.8182, lng: 8.2275 },
+    { match: 'rome', lat: 41.9028, lng: 12.4964 },
+    { match: 'barcelona', lat: 41.3874, lng: 2.1686 },
+    { match: 'spain', lat: 40.4637, lng: -3.7492 },
+    { match: 'lisbon', lat: 38.7223, lng: -9.1393 },
+    { match: 'portugal', lat: 39.3999, lng: -8.2245 },
+    { match: 'new york', lat: 40.7128, lng: -74.006 },
+    { match: 'toronto', lat: 43.6532, lng: -79.3832 },
+    { match: 'canada', lat: 56.1304, lng: -106.3468 },
+    { match: 'miami', lat: 25.7617, lng: -80.1918 },
+    { match: 'san francisco', lat: 37.7749, lng: -122.4194 },
+    { match: 'los angeles', lat: 34.0522, lng: -118.2437 },
+    { match: 'united states', lat: 37.0902, lng: -95.7129 },
+    { match: 'singapore', lat: 1.3521, lng: 103.8198 },
+    { match: 'tokyo', lat: 35.6762, lng: 139.6503 },
+    { match: 'japan', lat: 36.2048, lng: 138.2529 },
+    { match: 'seoul', lat: 37.5665, lng: 126.978 },
+    { match: 'south korea', lat: 35.9078, lng: 127.7669 },
+    { match: 'hong kong', lat: 22.3193, lng: 114.1694 },
+    { match: 'mumbai', lat: 19.076, lng: 72.8777 },
+    { match: 'delhi', lat: 28.6139, lng: 77.209 },
+    { match: 'bangalore', lat: 12.9716, lng: 77.5946 },
+    { match: 'india', lat: 20.5937, lng: 78.9629 },
+    { match: 'sydney', lat: -33.8688, lng: 151.2093 },
+    { match: 'australia', lat: -25.2744, lng: 133.7751 },
+    { match: 'cape town', lat: -33.9249, lng: 18.4241 },
+    { match: 'south africa', lat: -30.5595, lng: 22.9375 },
+  ]
+
+  const found = matches.find((entry) => normalized.includes(entry.match))
+  return found ? { lat: found.lat, lng: found.lng, source: 'seed' } : null
+}
+
+function getVisibleLocationGroups(today = todayStamp()) {
+  const visibleRecords = getVisibleRecords(state.records, state.query, state.filter, today)
+  return getCityGroups(visibleRecords, today)
+}
+
+function syncInteractiveMap() {
+  const mapCanvas = document.querySelector('[data-map-canvas]')
+  const workspaceMode = getWorkspaceMode()
+  const L = window.L
+
+  if (!(mapCanvas instanceof HTMLElement) || workspaceMode !== 'map' || !L) {
+    return
+  }
+
+  if (rosterMap && rosterMap.getContainer() !== mapCanvas) {
+    rosterMap.remove()
+    rosterMap = null
+    rosterMapMarkersLayer = null
+    rosterMapTileLayers = {}
+  }
+
+  if (!rosterMap) {
+    rosterMap = L.map(mapCanvas, {
+      zoomControl: true,
+      minZoom: 2,
+      worldCopyJump: true,
+    }).setView([20, 0], 2)
+
+    rosterMapTileLayers = {
+      dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      }),
+      satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+      }),
+    }
+    rosterMapMarkersLayer = L.layerGroup().addTo(rosterMap)
+  } else {
+    rosterMap.invalidateSize()
+  }
+
+  Object.entries(rosterMapTileLayers).forEach(([key, layer]) => {
+    if (key === state.settings.mapLayer) {
+      if (!rosterMap.hasLayer(layer)) {
+        layer.addTo(rosterMap)
+      }
+    } else if (rosterMap.hasLayer(layer)) {
+      rosterMap.removeLayer(layer)
+    }
+  })
+
+  if (rosterMapMarkersLayer) {
+    rosterMapMarkersLayer.clearLayers()
+  }
+
+  const today = todayStamp()
+  const locationGroups = getVisibleLocationGroups(today)
+  const bounds = []
+
+  for (const group of locationGroups) {
+    if (!group.coordinates?.lat || !group.coordinates?.lng) {
+      queueGeocodeLocation(group.city)
+      continue
+    }
+
+    const strongestTone = group.records
+      .map((record) => getAttentionState(record, today).tone)
+      .sort((first, second) => tonePriority(first) - tonePriority(second))[0]
+
+    const primaryRecord = group.records[0]
+    const marker = L.marker([group.coordinates.lat, group.coordinates.lng], {
+      icon: L.divIcon({
+        className: '',
+        html: `
+          <button class="map-pin map-pin--${strongestTone} ${primaryRecord.id === state.selectedId ? 'is-selected' : ''}" type="button">
+            <span class="map-pin__pulse"></span>
+            <span class="map-pin__count">${group.records.length}</span>
+          </button>
+        `,
+        iconSize: [54, 54],
+        iconAnchor: [27, 27],
+      }),
+    })
+
+    marker.on('click', () => {
+      selectRecord(primaryRecord.id)
+    })
+
+    marker.bindTooltip(`${group.city} · ${group.records.length} ${group.records.length === 1 ? 'person' : 'people'}`, {
+      direction: 'top',
+      offset: [0, -18],
+      className: 'map-tooltip',
+    })
+
+    marker.addTo(rosterMapMarkersLayer)
+    bounds.push([group.coordinates.lat, group.coordinates.lng])
+  }
+
+  if (bounds.length) {
+    const latLngBounds = L.latLngBounds(bounds)
+    const current = rosterMap.getBounds()
+    if (!current.isValid() || !current.contains(latLngBounds)) {
+      rosterMap.fitBounds(latLngBounds.pad(0.28), { animate: true, duration: 0.7 })
+    }
+  }
+}
+
+function fitRosterMapToVisiblePeople() {
+  if (!rosterMap) {
+    return
+  }
+  const groups = getVisibleLocationGroups()
+  const bounds = groups
+    .filter((group) => group.coordinates?.lat && group.coordinates?.lng)
+    .map((group) => [group.coordinates.lat, group.coordinates.lng])
+  if (bounds.length) {
+    rosterMap.fitBounds(bounds, { padding: [36, 36], animate: true, duration: 0.75 })
+  }
+}
+
+async function queueGeocodeLocation(location) {
+  const label = normalizeLocationLabel(location).toLowerCase()
+  if (!label || label === 'unmapped' || geocodePending.has(label) || geocodeCache[label]?.lat != null) {
+    return
+  }
+
+  geocodePending.add(label)
+  try {
+    const response = await window.fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(location)}`, {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+    if (!response.ok) {
+      return
+    }
+    const results = await response.json()
+    const result = Array.isArray(results) ? results[0] : null
+    if (!result?.lat || !result?.lon) {
+      return
+    }
+    geocodeCache[label] = {
+      lat: Number(result.lat),
+      lng: Number(result.lon),
+      source: 'nominatim',
+      label: result.display_name || location,
+    }
+    persistGeocodeCache()
+    if (getWorkspaceMode() === 'map') {
+      render({ preserveFocus: false })
+    }
+  } catch {
+    // Ignore geocode failures; the map can still render known points.
+  } finally {
+    geocodePending.delete(label)
+  }
+}
+
+function buildTimelineEvents(records, today) {
+  const events = []
+
+  for (const record of records) {
+    const attention = getAttentionState(record, today)
+    events.push({
+      id: `${record.id}-next`,
+      date: getNextTouchDate(record),
+      label: attention.label,
+      tone: attention.tone,
+      title: 'Next touch scheduled',
+      description: `${record.touchStyle} planned with a ${record.cadenceDays}-day rhythm.`,
+      record,
+    })
+
+    events.push({
+      id: `${record.id}-last`,
+      date: record.lastContact,
+      label: 'Last touch',
+      tone: 'steady',
+      title: 'Last contact',
+      description: `Last touched via ${record.touchStyle}${record.city ? ` in ${record.city}` : ''}.`,
+      record,
+    })
+
+    events.push({
+      id: `${record.id}-created`,
+      date: record.createdAt,
+      label: 'Added',
+      tone: 'steady',
+      title: 'Added to Roster',
+      description: `${record.name} was added to your roster with ${record.tags.length} ${record.tags.length === 1 ? 'tag' : 'tags'}.`,
+      record,
+    })
+
+    for (const memory of record.memories.slice(0, 5)) {
+      events.push({
+        id: memory.id,
+        date: memory.date,
+        label: 'Memory',
+        tone: 'soon',
+        title: 'Memory captured',
+        description: truncate(memory.text, 160),
+        record,
+      })
+    }
+  }
+
+  return events
+    .sort((first, second) => {
+      const order = second.date.localeCompare(first.date)
+      return state.sortDirection === 'asc' ? -order : order
+    })
+    .slice(0, 80)
+}
+
 function getAttentionState(record, today) {
   const nextTouch = getNextTouchDate(record)
   const daysUntil = differenceInDays(today, nextTouch)
@@ -4243,11 +7466,14 @@ function getNextTouchDate(record) {
 }
 
 function applySettings() {
+  const workspaceMode = getWorkspaceMode()
   document.body.dataset.theme = state.settings.theme
+  document.body.dataset.workspaceMode = workspaceMode
   document.body.classList.toggle('motion-off', !state.settings.motion)
   document.body.classList.toggle('dense-ui', !!state.settings.dense)
   document.body.classList.toggle('compact-view', !!state.settings.compact)
-  document.body.classList.toggle('tab-view', !!state.settings.tabView)
+  document.body.classList.toggle('ultra-compact-view', workspaceMode === 'classic' && !!state.settings.ultraCompact)
+  document.body.classList.toggle('tab-view', workspaceMode === 'tab')
   document.documentElement.style.setProperty('--frame-scale', String(state.settings.scale / 100))
 }
 
@@ -4387,6 +7613,19 @@ function loadDrafts() {
   }
 }
 
+function loadGeocodeCache() {
+  try {
+    const raw = window.localStorage.getItem(GEOCODE_CACHE_KEY)
+    if (!raw) {
+      return {}
+    }
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
 function persistRecords() {
   window.localStorage.setItem(RECORDS_KEY, JSON.stringify(state.records))
 }
@@ -4397,6 +7636,10 @@ function persistSettings() {
 
 function persistDrafts() {
   window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(state.drafts))
+}
+
+function persistGeocodeCache() {
+  window.localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(geocodeCache))
 }
 
 function resetMemoryDraft() {
@@ -4483,7 +7726,18 @@ function normalizeSettings(value = {}) {
     : typeof value.customTouchStyles === 'string'
       ? value.customTouchStyles.split(',')
       : []
+  const customTiers = Array.isArray(value.customTiers) ? value.customTiers : []
+  const resolvedTierDefinitions = resolveTierDefinitions(customTiers)
+  const resolvedTierKeys = resolvedTierDefinitions.map((tier) => tier.key)
   const resolvedTouchStyles = resolveTouchStyles(customTouchStyles, [defaults.touchStyle])
+  const featureDefaults = defaultSettings.features
+  const featureFlags = value.features && typeof value.features === 'object' ? value.features : {}
+
+  const workspaceMode = workspaceModes.includes(value.workspaceMode)
+    ? value.workspaceMode
+    : value.tabView
+      ? 'tab'
+      : defaultSettings.workspaceMode
 
   return {
     theme: themeOptions.some((theme) => theme.value === value.theme) ? value.theme : defaultSettings.theme,
@@ -4491,9 +7745,27 @@ function normalizeSettings(value = {}) {
     dense: typeof value.dense === 'boolean' ? value.dense : defaultSettings.dense,
     hints: typeof value.hints === 'boolean' ? value.hints : defaultSettings.hints,
     compact: typeof value.compact === 'boolean' ? value.compact : defaultSettings.compact,
-    tabView: typeof value.tabView === 'boolean' ? value.tabView : defaultSettings.tabView,
+    ultraCompact: typeof value.ultraCompact === 'boolean' ? value.ultraCompact : defaultSettings.ultraCompact,
+    leftRailVisible: typeof value.leftRailVisible === 'boolean' ? value.leftRailVisible : defaultSettings.leftRailVisible,
+    rightRailVisible: typeof value.rightRailVisible === 'boolean' ? value.rightRailVisible : defaultSettings.rightRailVisible,
+    workspaceMode,
+    tabLayout: ['cards', 'kanban'].includes(value.tabLayout) ? value.tabLayout : defaultSettings.tabLayout,
+    mapLayer: ['dark', 'satellite'].includes(value.mapLayer) ? value.mapLayer : defaultSettings.mapLayer,
+    tabView: workspaceMode === 'tab',
     scale: clamp(Number(value.scale) || defaultSettings.scale, 60, 100),
     customTouchStyles: resolvedTouchStyles.filter((style) => !baseTouchStyles.includes(style)),
+    customTiers: resolvedTierDefinitions.filter((tier) => !baseTierDefinitions.some((base) => base.key === tier.key)),
+    features: {
+      sidebarViews: typeof featureFlags.sidebarViews === 'boolean' ? featureFlags.sidebarViews : featureDefaults.sidebarViews,
+      sidebarToday: typeof featureFlags.sidebarToday === 'boolean' ? featureFlags.sidebarToday : featureDefaults.sidebarToday,
+      sidebarTiers: typeof featureFlags.sidebarTiers === 'boolean' ? featureFlags.sidebarTiers : featureDefaults.sidebarTiers,
+      sidebarGroups: typeof featureFlags.sidebarGroups === 'boolean' ? featureFlags.sidebarGroups : featureDefaults.sidebarGroups,
+      sidebarTags: typeof featureFlags.sidebarTags === 'boolean' ? featureFlags.sidebarTags : featureDefaults.sidebarTags,
+      sidebarQueue: typeof featureFlags.sidebarQueue === 'boolean' ? featureFlags.sidebarQueue : featureDefaults.sidebarQueue,
+      compactToggle: typeof featureFlags.compactToggle === 'boolean' ? featureFlags.compactToggle : featureDefaults.compactToggle,
+      tabViewToggle: typeof featureFlags.tabViewToggle === 'boolean' ? featureFlags.tabViewToggle : featureDefaults.tabViewToggle,
+      shortcutDock: typeof featureFlags.shortcutDock === 'boolean' ? featureFlags.shortcutDock : featureDefaults.shortcutDock,
+    },
     reminders: {
       enabled: typeof value.reminders?.enabled === 'boolean' ? value.reminders.enabled : defaultSettings.reminders.enabled,
       range: ['today', 'week'].includes(value.reminders?.range) ? value.reminders.range : defaultSettings.reminders.range,
@@ -4502,7 +7774,7 @@ function normalizeSettings(value = {}) {
       meetingLeadDays: clamp(Number(value.reminders?.meetingLeadDays) || defaultSettings.reminders.meetingLeadDays, 0, 14),
     },
     defaults: {
-      tier: tierOrder.includes(defaults.tier) ? defaults.tier : defaultContactSettings.tier,
+      tier: resolvedTierKeys.includes(defaults.tier) ? defaults.tier : defaultContactSettings.tier,
       touchStyle: resolvedTouchStyles.includes(normalizeTouchStyle(defaults.touchStyle))
         ? normalizeTouchStyle(defaults.touchStyle)
         : defaultContactSettings.touchStyle,
@@ -4526,6 +7798,7 @@ function normalizeSettings(value = {}) {
               .filter(Boolean)
           : defaultContactSettings.groups.slice(),
     },
+    tutorialSeen: typeof value.tutorialSeen === 'boolean' ? value.tutorialSeen : defaultSettings.tutorialSeen,
   }
 }
 
@@ -4540,26 +7813,63 @@ function cloneInitialRecords() {
   }))
 }
 
-function createSeedRecord(name, tier, lastContact, cadenceDays, tags = [], city = '', groups = []) {
+function createSeedMemory(daysOffset, text) {
+  return {
+    id: makeId(),
+    date: addDays(todayStamp(), daysOffset),
+    text: String(text || '').trim(),
+  }
+}
+
+function createSeedRecord({
+  name,
+  tier,
+  lastContactOffsetDays = -7,
+  cadenceDays,
+  tags = [],
+  city = '',
+  groups = [],
+  createdOffsetDays = -15,
+  touchStyle = '',
+  bondHealth = null,
+  focus = '',
+  notes = '',
+  relatedIds = [],
+  avatar = '',
+  contact = {},
+  memories = [],
+}) {
   return {
     id: slugify(name),
     name,
     archived: false,
     tier,
     city,
-    createdAt: '2026-03-30',
-    lastContact,
+    createdAt: addDays(todayStamp(), createdOffsetDays),
+    lastContact: addDays(todayStamp(), lastContactOffsetDays),
     cadenceDays,
-    touchStyle: tier === 'inner-circle' ? 'Call' : tier === 'close' ? 'Coffee' : 'Text',
-    bondHealth: tier === 'inner-circle' ? 88 : tier === 'close' ? 78 : tier === 'medium' ? 66 : 54,
-    focus: '',
-    notes: '',
+    touchStyle: touchStyle || (tier === 'inner-circle' ? 'Call' : tier === 'close' ? 'Coffee' : 'Text'),
+    bondHealth:
+      typeof bondHealth === 'number'
+        ? clamp(bondHealth, 0, 100)
+        : tier === 'inner-circle'
+          ? 88
+          : tier === 'close'
+            ? 78
+            : tier === 'medium'
+              ? 66
+              : 54,
+    focus,
+    notes,
     tags,
     groups,
-    relatedIds: [],
-    avatar: '',
-    contact: createEmptyContactCard(),
-    memories: [],
+    relatedIds,
+    avatar,
+    contact: {
+      ...createEmptyContactCard(),
+      ...contact,
+    },
+    memories: memories.map((memory) => ({ ...memory })),
   }
 }
 
@@ -4574,8 +7884,17 @@ function summaryTile(label, value, detail) {
 }
 
 function filterButton(key, label, note, count) {
+  const filterKeyHints = {
+    all: '1',
+    'needs-attention': '2',
+    'inner-circle': '3',
+    close: '4',
+    medium: '5',
+    acquaintance: '6',
+  }
+
   return `
-    <button class="filter-button ${state.filter === key ? 'active' : ''}" data-filter="${key}">
+    <button class="filter-button ${state.filter === key ? 'active' : ''}" data-filter="${key}" ${keyHintAttrs(filterKeyHints[key] || '')}>
       <span>
         <strong>${label}</strong>
         <small>${note}</small>
@@ -4618,6 +7937,21 @@ function buildAnimatedValue(value, key, options = {}) {
   `
 }
 
+function buildAnimatedText(value, key, options = {}) {
+  const { tag = 'span', className = '' } = options
+  const display = String(value || '')
+  const previousDisplay = animatedTextHistory.get(key) || display
+  animatedTextHistory.set(key, display)
+  const stableClass = previousDisplay === display ? 'is-static' : ''
+
+  return `
+    <${tag} class="animated-text ${className} ${stableClass}" aria-label="${escapeAttribute(display)}">
+      <span class="animated-text__current">${escapeHtml(display)}</span>
+      ${previousDisplay === display ? '' : `<span class="animated-text__previous" aria-hidden="true">${escapeHtml(previousDisplay)}</span>`}
+    </${tag}>
+  `
+}
+
 function filterLabel(filter) {
   if (filter === 'all') {
     return 'All people'
@@ -4639,7 +7973,7 @@ function truncate(value, maxLength) {
 }
 
 function slugify(value) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
 function normalizeTouchStyle(value) {
@@ -4817,10 +8151,10 @@ function getTagSuggestions(record, draft) {
   )
 
   const normalizedDraft = normalizeTag(draft)
-  const existing = new Set(record.tags.map((tag) => tag.toLowerCase()))
+  const existing = new Set(record.tags.map((tag) => String(tag || '').toLowerCase()))
 
   return pool
-    .map((tag) => tag.toLowerCase())
+    .map((tag) => String(tag || '').toLowerCase())
     .filter((tag) => !existing.has(tag))
     .filter((tag) => (normalizedDraft ? tag.includes(normalizedDraft) : true))
     .slice(0, normalizedDraft ? 8 : 6)
@@ -5306,13 +8640,10 @@ function standardizeRecord(record) {
     return null
   }
 
-  const tier = tierOrder.includes(record.tier)
-    ? record.tier
-    : tierOrder.includes(record.tierKey)
-      ? record.tierKey
-      : tierOrder.includes(profile.tierKey)
-        ? profile.tierKey
-        : inferTier(profile.tierLabel || profile.tier || record.tierLabel || record.tier)
+  const tierCandidate = [record.tier, record.tierKey, profile.tierKey]
+    .map((value) => normalizeTierKey(value))
+    .find(Boolean)
+  const tier = tierCandidate || inferTier(profile.tierLabel || profile.tier || record.tierLabel || record.tier)
 
   return {
     id: String(record.id || profile.id || slugify(name) || makeId()),
@@ -5504,14 +8835,12 @@ function normalizePersonKey(value) {
 
 function inferTier(value) {
   const normalized = String(value || '').toLowerCase()
-  if (normalized.includes('inner')) {
-    return 'inner-circle'
-  }
-  if (normalized.includes('close')) {
-    return 'close'
-  }
-  if (normalized.includes('medium')) {
-    return 'medium'
+  const matchingTier = tierOrder.find((tierKey) => {
+    const meta = tierMeta[tierKey]
+    return normalized.includes(tierKey) || normalized.includes(String(meta?.label || '').toLowerCase())
+  })
+  if (matchingTier) {
+    return matchingTier
   }
   return 'acquaintance'
 }
@@ -5569,10 +8898,10 @@ function getUniqueTags(records) {
 function getGroupSuggestions(record, draft) {
   const pool = getUniqueGroups(state.records)
   const normalizedDraft = normalizeGroup(draft)
-  const existing = new Set(record.groups.map((group) => group.toLowerCase()))
+  const existing = new Set(record.groups.map((group) => String(group || '').toLowerCase()))
 
   return pool
-    .map((group) => group.toLowerCase())
+    .map((group) => String(group || '').toLowerCase())
     .filter((group) => !existing.has(group))
     .filter((group) => (normalizedDraft ? group.includes(normalizedDraft) : true))
     .slice(0, normalizedDraft ? 8 : 6)
@@ -5596,6 +8925,93 @@ function getRelatedRecords(record) {
   return (record.relatedIds || [])
     .map((relatedId) => state.records.find((candidate) => candidate.id === relatedId))
     .filter(Boolean)
+}
+
+function buildOrbitData(record) {
+  const direct = getRelatedRecords(record)
+    .sort((first, second) => getRelatedRecords(second).length - getRelatedRecords(first).length || first.name.localeCompare(second.name))
+    .slice(0, 12)
+  const directIds = new Set(direct.map((entry) => entry.id))
+  const secondaryMap = new Map()
+  const edges = []
+
+  direct.forEach((related) => {
+    edges.push({ from: record, to: related, type: 'direct' })
+
+    getRelatedRecords(related).forEach((candidate) => {
+      if (candidate.id === record.id || directIds.has(candidate.id)) {
+        return
+      }
+      if (!secondaryMap.has(candidate.id)) {
+        secondaryMap.set(candidate.id, candidate)
+      }
+    })
+  })
+
+  const secondary = Array.from(secondaryMap.values())
+    .sort((first, second) => getRelatedRecords(second).length - getRelatedRecords(first).length || first.name.localeCompare(second.name))
+    .slice(0, 24)
+
+  secondary.forEach((candidate) => {
+    direct.forEach((related) => {
+      if (related.relatedIds.includes(candidate.id)) {
+        edges.push({ from: related, to: candidate, type: 'secondary' })
+      }
+    })
+  })
+
+  const centerNode = buildOrbitNode(record, 50, 50, 'center')
+  const directRadius = clamp(24 + direct.length * 1.2, 27, 34)
+  const secondaryRadius = clamp(directRadius + 14 + secondary.length * 0.3, 40, 46)
+  const directNodes = placeOrbitRing(direct, directRadius, 'direct')
+  const secondaryNodes = placeOrbitRing(secondary, secondaryRadius, 'secondary', -72)
+  const nodeLookup = new Map([centerNode, ...directNodes, ...secondaryNodes].map((node) => [node.id, node]))
+
+  return {
+    direct,
+    secondary,
+    nodes: [centerNode, ...directNodes, ...secondaryNodes],
+    edges: edges
+      .map((edge) => ({
+        type: edge.type,
+        from: nodeLookup.get(edge.from.id),
+        to: nodeLookup.get(edge.to.id),
+      }))
+      .filter((edge) => edge.from && edge.to),
+  }
+}
+
+function placeOrbitRing(records, radius, ring, startAngle = -90) {
+  if (!records.length) {
+    return []
+  }
+
+  return records.map((record, index) => {
+    const angle = ((360 / records.length) * index + startAngle) * (Math.PI / 180)
+    const x = 50 + Math.cos(angle) * radius
+    const y = 50 + Math.sin(angle) * radius
+    return buildOrbitNode(record, x, y, ring)
+  })
+}
+
+function buildOrbitNode(record, x, y, ring) {
+  const initials = record.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'R'
+
+  return {
+    id: record.id,
+    name: record.name,
+    avatar: record.avatar,
+    initials,
+    ring,
+    x,
+    y,
+  }
 }
 
 function findRecordByNameOrId(value) {
@@ -5738,6 +9154,73 @@ function handleDrop(event) {
   if (zone.dataset.dropZone === 'avatar') {
     state.pendingAvatarId = state.selectedId
     importAvatarFile(file)
+  }
+}
+
+function initCustomCursor() {
+  if (!window.matchMedia('(pointer:fine)').matches || !document.documentElement) {
+    if (cursorCleanup) {
+      cursorCleanup()
+      cursorCleanup = null
+    }
+    document.documentElement.classList.remove('has-custom-cursor')
+    document.body.classList.remove('cursor-visible', 'cursor-interactive', 'cursor-pressed')
+    return
+  }
+
+  document.documentElement.classList.add('has-custom-cursor')
+  const ring = document.querySelector('[data-cursor-ring]')
+  const dot = document.querySelector('[data-cursor-dot]')
+  if (!(ring instanceof HTMLElement) || !(dot instanceof HTMLElement)) {
+    return
+  }
+
+  const updateInteractiveState = (target) => {
+    const interactive = target instanceof Element && target.closest('button, a, input, select, textarea, label, [role="button"], .record-card, .tab-contact-card, .tier-person, .token-filter, .command-palette-item')
+    document.body.classList.toggle('cursor-interactive', Boolean(interactive))
+  }
+
+  const moveCursor = (event) => {
+    const x = event.clientX
+    const y = event.clientY
+    ring.style.left = `${x}px`
+    ring.style.top = `${y}px`
+    dot.style.left = `${x}px`
+    dot.style.top = `${y}px`
+    document.body.classList.add('cursor-visible')
+    updateInteractiveState(event.target)
+  }
+
+  const hideCursor = () => {
+    document.body.classList.remove('cursor-visible', 'cursor-interactive')
+  }
+
+  const pointerDown = () => {
+    document.body.classList.add('cursor-pressed')
+  }
+
+  const pointerUp = () => {
+    document.body.classList.remove('cursor-pressed')
+  }
+
+  const pointerOver = (event) => {
+    updateInteractiveState(event.target)
+  }
+
+  window.addEventListener('pointermove', moveCursor)
+  window.addEventListener('pointerleave', hideCursor)
+  window.addEventListener('blur', hideCursor)
+  window.addEventListener('pointerdown', pointerDown)
+  window.addEventListener('pointerup', pointerUp)
+  document.addEventListener('pointerover', pointerOver)
+
+  cursorCleanup = () => {
+    window.removeEventListener('pointermove', moveCursor)
+    window.removeEventListener('pointerleave', hideCursor)
+    window.removeEventListener('blur', hideCursor)
+    window.removeEventListener('pointerdown', pointerDown)
+    window.removeEventListener('pointerup', pointerUp)
+    document.removeEventListener('pointerover', pointerOver)
   }
 }
 

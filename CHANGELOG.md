@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.3
+- Added a richer custom cursor, drag-to-photo affordances, smoother command palette keyboard motion, and cleaner bulk-selection polish.
+- Added master inspector collapse behavior from the selected-person card and synced the packaged Apple Silicon build to the latest UX pass.
+
+## v0.9.2
+- Added boot, onboarding, and collapsible inspector/rail structure so the workspace opens cleaner and teaches itself on first run.
+- Added bulk mass-editing, archive/delete safety prompts, restorable archive flows, and richer multi-select actions for tags and groups.
+- Added quick-action command palette polish, left/right rail controls, and stronger keyboard-first navigation across the app.
+- Added Orbit, improved alternate views, and a tighter local-first workspace shell ahead of real sync and capture integrations.
+
 ## v0.9.1
 - Split the product into a public marketing site, dedicated pricing page, and separate desktop/web app entrypoint.
 - Added Stripe-ready hosted billing configuration for monthly and yearly Pro checkout links plus optional billing portal support.

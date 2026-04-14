@@ -1,19 +1,22 @@
 {
-  "name": "roster-desktop",
-  "version": "0.9.1",
+  "name": "Roster-desktop",
+  "version": "0.9.3",
   "description": "Roster desktop app for relationship tracking",
   "main": "electron-main.cjs",
   "scripts": {
     "start": "electron .",
-    "package:mac": "electron-packager . Roster --platform=darwin --arch=arm64 --icon=assets/roster-logo.icns --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist",
-    "package:mac:intel": "electron-packager . Roster --platform=darwin --arch=x64 --icon=assets/roster-logo.icns --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist",
-    "package:win": "electron-packager . Roster --platform=win32 --arch=x64 --overwrite --prune=true --out=dist",
-    "package:linux": "electron-packager . Roster --platform=linux --arch=x64 --icon=assets/roster-logo.svg.png --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=dist",
+    "package:mac": "mkdir -p artifacts/dist && electron-packager . Roster --platform=darwin --arch=arm64 --icon=assets/roster-logo.icns --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=artifacts/dist",
+    "package:mac:intel": "mkdir -p artifacts/dist && electron-packager . Roster --platform=darwin --arch=x64 --icon=assets/roster-logo.icns --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=artifacts/dist",
+    "package:win": "mkdir -p artifacts/dist && electron-packager . Roster --platform=win32 --arch=x64 --overwrite --prune=true --out=artifacts/dist",
+    "package:linux": "mkdir -p artifacts/dist && electron-packager . Roster --platform=linux --arch=x64 --icon=assets/roster-logo.svg.png --app-version=$npm_package_version --build-version=$npm_package_version --overwrite --prune=true --out=artifacts/dist",
     "release:publish": "bash scripts/release.sh",
     "clean:artifacts": "bash scripts/clean-artifacts.sh"
   },
   "devDependencies": {
     "electron": "^41.1.0",
     "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
   }
 }

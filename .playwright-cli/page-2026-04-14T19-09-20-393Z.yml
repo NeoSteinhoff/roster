@@ -1,0 +1,862 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - img "Roster logo" [ref=e8]
+          - generic [ref=e9]:
+            - paragraph [ref=e10]: Roster
+            - generic [ref=e11]: The friend CRM
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - heading "Your people, clearly remembered." [level=1] [ref=e14]
+            - paragraph [ref=e15]: Track the relationships that matter, keep memory attached to each person, and move through your roster with less friction.
+          - generic [ref=e16]:
+            - button "Add person" [ref=e17] [cursor=pointer]
+            - button "Settings" [ref=e18] [cursor=pointer]
+            - button "Quick actions" [ref=e19] [cursor=pointer]
+            - button "Compact view" [ref=e20] [cursor=pointer]
+            - tablist "Workspace view" [ref=e21]:
+              - tab "Classic CRM" [selected] [ref=e22] [cursor=pointer]
+              - tab "Tab view" [ref=e23] [cursor=pointer]
+              - tab "Map view" [ref=e24] [cursor=pointer]
+              - tab "Relationships" [ref=e25] [cursor=pointer]
+              - tab "Timeline" [ref=e26] [cursor=pointer]
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - generic [ref=e29]: "["
+                - generic [ref=e30]: Left rail
+              - generic [ref=e31]:
+                - generic [ref=e32]: "]"
+                - generic [ref=e33]: Inspector
+            - generic "Quick keyboard shortcuts" [ref=e34]:
+              - generic [ref=e35]:
+                - generic [ref=e36]: Cmd/Ctrl + K
+                - generic [ref=e37]: Open quick actions
+              - generic [ref=e38]:
+                - generic [ref=e39]: /
+                - generic [ref=e40]: Search roster
+              - generic [ref=e41]:
+                - generic [ref=e42]: "N"
+                - generic [ref=e43]: Add person
+              - generic [ref=e44]:
+                - generic [ref=e45]: G
+                - generic [ref=e46]: Open settings
+              - generic [ref=e47]:
+                - generic [ref=e48]: "?"
+                - generic [ref=e49]: Open shortcuts tab
+              - generic [ref=e50]:
+                - generic [ref=e51]: S
+                - generic [ref=e52]: Toggle multi-select
+              - button "? All keys" [ref=e53] [cursor=pointer]:
+                - generic [ref=e54]: "?"
+                - generic [ref=e55]: All keys
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - text: People tracked
+          - strong [ref=e58]:
+            - generic [ref=e59]: "6"
+          - text: Only your active roster lives here
+        - generic [ref=e60]:
+          - text: Needs attention
+          - strong [ref=e61]:
+            - generic [ref=e62]: "6"
+          - text: 6 overdue right now
+        - generic [ref=e63]:
+          - text: Memories saved
+          - strong [ref=e64]:
+            - generic [ref=e65]: "0"
+          - text: Stored context for future you
+        - generic [ref=e66]:
+          - text: Average bond
+          - strong [ref=e67]:
+            - generic [ref=e68]: 75%
+          - text: Live relationship health across active people
+    - main [ref=e69]:
+      - complementary [ref=e70]:
+        - generic [ref=e72]: Navigate
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - button "Views 6 active Filter the circle. Focused on Ivan Wazir" [ref=e75] [cursor=pointer]:
+              - generic [ref=e76]:
+                - generic [ref=e77]:
+                  - paragraph [ref=e78]: Views
+                  - generic [ref=e79]:
+                    - generic "6" [ref=e80]:
+                      - generic [ref=e81]: "6"
+                    - text: active
+                - strong [ref=e82]: Filter the circle.
+                - generic [ref=e83]: Focused on Ivan Wazir
+            - generic:
+              - generic:
+                - paragraph:
+                  - text: Focused on
+                  - strong:
+                    - generic "Ivan Wazir":
+                      - generic: Ivan Wazir
+                - generic:
+                  - button "All people Everything in one view 6":
+                    - generic:
+                      - strong: All people
+                      - generic: Everything in one view
+                    - emphasis:
+                      - generic "6":
+                        - generic: "6"
+                  - button "Needs attention Overdue or due this week 6":
+                    - generic:
+                      - strong: Needs attention
+                      - generic: Overdue or due this week
+                    - emphasis:
+                      - generic "6":
+                        - generic: "6"
+                  - button "Inner circle Touch weekly 2":
+                    - generic:
+                      - strong: Inner circle
+                      - generic: Touch weekly
+                    - emphasis:
+                      - generic "2":
+                        - generic: "2"
+                  - button "Close Every 10-14 days 2":
+                    - generic:
+                      - strong: Close
+                      - generic: Every 10-14 days
+                    - emphasis:
+                      - generic "2":
+                        - generic: "2"
+                  - button "Medium Every 2-4 weeks 1":
+                    - generic:
+                      - strong: Medium
+                      - generic: Every 2-4 weeks
+                    - emphasis:
+                      - generic "1":
+                        - generic: "1"
+                  - button "Acquaintance Monthly or event-based 1":
+                    - generic:
+                      - strong: Acquaintance
+                      - generic: Monthly or event-based
+                    - emphasis:
+                      - generic "1":
+                        - generic: "1"
+                  - button "Archived Stored away, not deleted 0":
+                    - generic:
+                      - strong: Archived
+                      - generic: Stored away, not deleted
+                    - emphasis:
+                      - generic "0":
+                        - generic: "0"
+          - generic [ref=e84]:
+            - button "Today 5 queued Who to reach out to next. Birthdays, reconnects, and what deserves a touch today or this week." [ref=e85] [cursor=pointer]:
+              - generic [ref=e86]:
+                - generic [ref=e87]:
+                  - paragraph [ref=e88]: Today
+                  - generic [ref=e89]:
+                    - generic "5" [ref=e90]:
+                      - generic [ref=e91]: "5"
+                    - text: queued
+                - strong [ref=e92]: Who to reach out to next.
+                - generic [ref=e93]: Birthdays, reconnects, and what deserves a touch today or this week.
+            - generic:
+              - generic:
+                - tablist "Today sidebar mode":
+                  - tab "Today" [selected]
+                  - tab "Attention queue"
+                - generic:
+                  - generic:
+                    - generic:
+                      - strong: Today
+                      - generic: 5 live items
+                    - list:
+                      - listitem:
+                        - button "Rayhan Reconnect now Overdue 23d":
+                          - generic:
+                            - strong: Rayhan
+                            - generic: Reconnect now
+                          - generic: Overdue 23d
+                      - listitem:
+                        - button "Silver Rottweiler Reconnect now Overdue 23d":
+                          - generic:
+                            - strong: Silver Rottweiler
+                            - generic: Reconnect now
+                          - generic: Overdue 23d
+                      - listitem:
+                        - button "Karoline Berg Reconnect now Overdue 17d":
+                          - generic:
+                            - strong: Karoline Berg
+                            - generic: Reconnect now
+                          - generic: Overdue 17d
+                      - listitem:
+                        - button "Gaspard Reconnect now Overdue 16d":
+                          - generic:
+                            - strong: Gaspard
+                            - generic: Reconnect now
+                          - generic: Overdue 16d
+                      - listitem:
+                        - button "Ivan Wazir Reconnect now Overdue 13d":
+                          - generic:
+                            - strong: Ivan Wazir
+                            - generic: Reconnect now
+                          - generic: Overdue 13d
+                  - generic:
+                    - generic:
+                      - strong: Tomorrow
+                      - generic: No tomorrow nudges
+                    - list:
+                      - listitem: Nothing here right now.
+                  - generic:
+                    - generic:
+                      - strong: This week
+                      - generic: No additional follow-ups this week
+                    - list:
+                      - listitem: Nothing here right now.
+          - generic [ref=e94]:
+            - button "Groups Groups Filter by shared lanes across your roster." [ref=e95] [cursor=pointer]:
+              - generic [ref=e96]:
+                - paragraph [ref=e98]: Groups
+                - strong [ref=e99]: Groups
+                - generic [ref=e100]: Filter by shared lanes across your roster.
+            - generic:
+              - generic:
+                - generic:
+                  - button "All groups"
+                  - generic: Groups appear once you add them to people.
+          - generic [ref=e101]:
+            - button "Tags 10 live Tags Filter by shared context, identity, and energy." [ref=e102] [cursor=pointer]:
+              - generic [ref=e103]:
+                - generic [ref=e104]:
+                  - paragraph [ref=e105]: Tags
+                  - generic [ref=e106]: 10 live
+                - strong [ref=e107]: Tags
+                - generic [ref=e108]: Filter by shared context, identity, and energy.
+            - generic:
+              - generic:
+                - generic:
+                  - button "All tags"
+                  - button "business"
+                  - button "creative"
+                  - button "dog"
+                  - button "europe"
+                  - button "family"
+                  - button "friend"
+                  - button "local"
+                  - button "long-distance"
+                  - button "loyal"
+                  - button "social"
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - paragraph [ref=e112]: Roster
+            - heading "6 people in view" [level=2] [ref=e113]:
+              - generic "6" [ref=e114]:
+                - generic [ref=e115]: "6"
+              - text: people in view
+            - paragraph [ref=e116]:
+              - generic [ref=e117]: View
+              - generic "All people" [ref=e118]:
+                - generic [ref=e119]: All people
+              - generic [ref=e120]: Group
+              - generic "All groups" [ref=e121]:
+                - generic [ref=e122]: All groups
+              - generic [ref=e123]: Tag
+              - generic "All tags" [ref=e124]:
+                - generic [ref=e125]: All tags
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - generic [ref=e128]: Tier
+              - combobox "Tier" [ref=e129]:
+                - option "All people" [selected]
+                - option "Needs attention"
+                - option "Inner circle"
+                - option "Close"
+                - option "Medium"
+                - option "Acquaintance"
+                - option "Archived"
+            - generic [ref=e130]:
+              - generic [ref=e131]: Group
+              - combobox "Group" [ref=e132]:
+                - option "All groups" [selected]
+            - generic [ref=e133]:
+              - generic [ref=e134]: Tag
+              - combobox "Tag" [ref=e135]:
+                - option "All tags" [selected]
+                - option "business"
+                - option "creative"
+                - option "dog"
+                - option "europe"
+                - option "family"
+                - option "friend"
+                - option "local"
+                - option "long-distance"
+                - option "loyal"
+                - option "social"
+                - option "travel"
+            - generic [ref=e136]:
+              - generic [ref=e137]: Sort
+              - combobox "Sort" [ref=e138]:
+                - option "Attention" [selected]
+                - option "Name"
+                - option "Created"
+                - option "Group"
+                - option "Tag"
+            - generic [ref=e139]:
+              - generic [ref=e140]: Direction
+              - combobox "Direction" [ref=e141]:
+                - option "Newest first" [selected]
+                - option "Oldest first"
+            - button "Select multiple" [ref=e142] [cursor=pointer]
+        - generic [ref=e143]:
+          - generic [ref=e144]: Search by name, notes, memory, tag, group, or socials
+          - searchbox "Search by name, notes, memory, tag, group, or socials" [ref=e146]
+        - list [ref=e148]:
+          - listitem [ref=e149]:
+            - button "R Medium Rayhan Overdue 23d No focus note added yet. No city set Added Mar 30 Last Mar 1 Next Mar 22 Text 0 memories long-distance friend" [ref=e150] [cursor=pointer]:
+              - generic [ref=e151]:
+                - generic [ref=e152]:
+                  - generic [ref=e154]: R
+                  - generic [ref=e155]:
+                    - paragraph [ref=e156]: Medium
+                    - heading "Rayhan" [level=3] [ref=e157]
+                - generic [ref=e158]: Overdue 23d
+              - paragraph [ref=e159]: No focus note added yet.
+              - generic [ref=e160]:
+                - generic [ref=e161]: No city set
+                - generic [ref=e162]: Added Mar 30
+                - generic [ref=e163]: Last Mar 1
+                - generic [ref=e164]: Next Mar 22
+                - generic [ref=e165]: Text
+                - generic [ref=e166]: 0 memories
+              - generic [ref=e167]:
+                - generic [ref=e168]: long-distance
+                - generic [ref=e169]: friend
+          - listitem [ref=e170]:
+            - button "SR Close Silver Rottweiler Overdue 23d No focus note added yet. No city set Added Mar 30 Last Mar 8 Next Mar 22 Coffee 0 memories dog loyal local" [ref=e171] [cursor=pointer]:
+              - generic [ref=e172]:
+                - generic [ref=e173]:
+                  - generic [ref=e175]: SR
+                  - generic [ref=e176]:
+                    - paragraph [ref=e177]: Close
+                    - heading "Silver Rottweiler" [level=3] [ref=e178]
+                - generic [ref=e179]: Overdue 23d
+              - paragraph [ref=e180]: No focus note added yet.
+              - generic [ref=e181]:
+                - generic [ref=e182]: No city set
+                - generic [ref=e183]: Added Mar 30
+                - generic [ref=e184]: Last Mar 8
+                - generic [ref=e185]: Next Mar 22
+                - generic [ref=e186]: Coffee
+                - generic [ref=e187]: 0 memories
+              - generic [ref=e188]:
+                - generic [ref=e189]: dog
+                - generic [ref=e190]: loyal
+                - generic [ref=e191]: local
+          - listitem [ref=e192]:
+            - button "KB Close Karoline Berg Overdue 17d No focus note added yet. Dubai Added Mar 30 Last Mar 18 Next Mar 28 Coffee 0 memories creative europe travel" [ref=e193] [cursor=pointer]:
+              - generic [ref=e194]:
+                - generic [ref=e195]:
+                  - generic [ref=e197]: KB
+                  - generic [ref=e198]:
+                    - paragraph [ref=e199]: Close
+                    - heading "Karoline Berg" [level=3] [ref=e200]
+                - generic [ref=e201]: Overdue 17d
+              - paragraph [ref=e202]: No focus note added yet.
+              - generic [ref=e203]:
+                - generic [ref=e204]: Dubai
+                - generic [ref=e205]: Added Mar 30
+                - generic [ref=e206]: Last Mar 18
+                - generic [ref=e207]: Next Mar 28
+                - generic [ref=e208]: Coffee
+                - generic [ref=e209]: 0 memories
+              - generic [ref=e210]:
+                - generic [ref=e211]: creative
+                - generic [ref=e212]: europe
+                - generic [ref=e213]: travel
+          - listitem [ref=e214]:
+            - button "G Acquaintance Gaspard Overdue 16d No focus note added yet. No city set Added Mar 30 Last Feb 12 Next Mar 29 Text 0 memories social europe" [ref=e215] [cursor=pointer]:
+              - generic [ref=e216]:
+                - generic [ref=e217]:
+                  - generic [ref=e219]: G
+                  - generic [ref=e220]:
+                    - paragraph [ref=e221]: Acquaintance
+                    - heading "Gaspard" [level=3] [ref=e222]
+                - generic [ref=e223]: Overdue 16d
+              - paragraph [ref=e224]: No focus note added yet.
+              - generic [ref=e225]:
+                - generic [ref=e226]: No city set
+                - generic [ref=e227]: Added Mar 30
+                - generic [ref=e228]: Last Feb 12
+                - generic [ref=e229]: Next Mar 29
+                - generic [ref=e230]: Text
+                - generic [ref=e231]: 0 memories
+              - generic [ref=e232]:
+                - generic [ref=e233]: social
+                - generic [ref=e234]: europe
+          - listitem [ref=e235]:
+            - button "IW Inner circle Ivan Wazir Overdue 13d No focus note added yet. Dubai Added Mar 30 Last Mar 25 Next Apr 1 Call 0 memories local business" [ref=e236] [cursor=pointer]:
+              - generic [ref=e237]:
+                - generic [ref=e238]:
+                  - generic [ref=e240]: IW
+                  - generic [ref=e241]:
+                    - paragraph [ref=e242]: Inner circle
+                    - heading "Ivan Wazir" [level=3] [ref=e243]
+                - generic [ref=e244]: Overdue 13d
+              - paragraph [ref=e245]: No focus note added yet.
+              - generic [ref=e246]:
+                - generic [ref=e247]: Dubai
+                - generic [ref=e248]: Added Mar 30
+                - generic [ref=e249]: Last Mar 25
+                - generic [ref=e250]: Next Apr 1
+                - generic [ref=e251]: Call
+                - generic [ref=e252]: 0 memories
+              - generic [ref=e253]:
+                - generic [ref=e254]: local
+                - generic [ref=e255]: business
+          - listitem [ref=e256]:
+            - button "RS Inner circle Rayan Shayara Overdue 10d No focus note added yet. No city set Added Mar 30 Last Mar 28 Next Apr 4 Call 0 memories family local" [ref=e257] [cursor=pointer]:
+              - generic [ref=e258]:
+                - generic [ref=e259]:
+                  - generic [ref=e261]: RS
+                  - generic [ref=e262]:
+                    - paragraph [ref=e263]: Inner circle
+                    - heading "Rayan Shayara" [level=3] [ref=e264]
+                - generic [ref=e265]: Overdue 10d
+              - paragraph [ref=e266]: No focus note added yet.
+              - generic [ref=e267]:
+                - generic [ref=e268]: No city set
+                - generic [ref=e269]: Added Mar 30
+                - generic [ref=e270]: Last Mar 28
+                - generic [ref=e271]: Next Apr 4
+                - generic [ref=e272]: Call
+                - generic [ref=e273]: 0 memories
+              - generic [ref=e274]:
+                - generic [ref=e275]: family
+                - generic [ref=e276]: local
+      - complementary [ref=e277]:
+        - generic [ref=e279]:
+          - paragraph [ref=e280]: Inspector
+          - heading "Ivan Wazir" [level=2] [ref=e281]
+        - generic [ref=e282]:
+          - generic [ref=e283]:
+            - generic [ref=e286]:
+              - generic [ref=e287]:
+                - generic [ref=e289]: IW
+                - generic [ref=e290]:
+                  - paragraph [ref=e291]: Selected person
+                  - heading "Ivan Wazir" [level=3] [ref=e292]
+                  - generic [ref=e293]:
+                    - generic [ref=e294]: Added Mon, Mar 30
+                    - generic [ref=e295]: Inner circle
+                    - generic [ref=e296]: No groups yet
+              - text: Drop a photo
+            - generic [ref=e299]:
+              - button "Full profile" [ref=e300] [cursor=pointer]
+              - button "Add photo" [ref=e301] [cursor=pointer]
+          - generic [ref=e302]:
+            - generic [ref=e305]:
+              - generic [ref=e306]:
+                - generic [ref=e307]:
+                  - paragraph [ref=e308]: Connection status
+                  - heading "Needs a check-in now" [level=3] [ref=e309]
+                - generic [ref=e310]: Overdue 13d
+              - paragraph [ref=e311]: Last contact Wed, Mar 25 · Next touch Wed, Apr 1 · 7 day rhythm
+            - generic [ref=e313]:
+              - generic [ref=e314]:
+                - generic [ref=e315]:
+                  - generic [ref=e316]: Bond health
+                  - strong [ref=e317]:
+                    - generic [ref=e318]: 88%
+                  - generic [ref=e319]: Relationship strength snapshot
+                - generic [ref=e320]:
+                  - generic [ref=e321]: Next touch
+                  - strong [ref=e322]:
+                    - generic [ref=e323]: Wed, Apr 1
+                  - generic [ref=e324]: Call · Wednesday, April 1
+                - generic [ref=e325]:
+                  - generic [ref=e326]: Cadence
+                  - strong [ref=e327]:
+                    - generic [ref=e328]: 7 days
+                  - generic [ref=e329]: Planned check-in spacing
+                - generic [ref=e330]:
+                  - generic [ref=e331]: Memories
+                  - strong [ref=e332]:
+                    - generic [ref=e333]: "0"
+                  - generic [ref=e334]: Saved notes and context
+              - generic [ref=e335]:
+                - button "Mark touched today" [ref=e336] [cursor=pointer]
+                - button "Meeting brief" [ref=e337] [cursor=pointer]
+                - button "Add memory" [ref=e338] [cursor=pointer]
+                - button "Archive" [ref=e339] [cursor=pointer]
+          - generic [ref=e340]:
+            - button "Basics Relationship settings Name, tier, cadence, style, groups, and tags in one place. 5 styles" [ref=e341] [cursor=pointer]:
+              - generic [ref=e342]:
+                - paragraph [ref=e343]: Basics
+                - strong [ref=e344]: Relationship settings
+                - generic [ref=e345]: Name, tier, cadence, style, groups, and tags in one place.
+              - generic [ref=e347]: 5 styles
+            - generic [ref=e349]:
+              - generic [ref=e350]:
+                - generic [ref=e351]:
+                  - generic [ref=e352]: Name
+                  - textbox "Name" [ref=e353]: Ivan Wazir
+                - generic [ref=e354]:
+                  - generic [ref=e355]: Tier
+                  - combobox "Tier" [ref=e356]:
+                    - option "Inner circle" [selected]
+                    - option "Close"
+                    - option "Medium"
+                    - option "Acquaintance"
+                - generic [ref=e357]:
+                  - generic [ref=e358]: City
+                  - textbox "City" [ref=e359]: Dubai
+                - generic [ref=e360]:
+                  - generic [ref=e361]: Touch style
+                  - combobox "Touch style" [ref=e362]:
+                    - option "Text"
+                    - option "Call" [selected]
+                    - option "Coffee"
+                    - option "Dinner"
+                    - option "Voice note"
+                - generic [ref=e363]:
+                  - generic [ref=e364]: Last contact
+                  - textbox "Last contact" [ref=e365]: 2026-03-25
+                - generic [ref=e366]:
+                  - generic [ref=e367]: Cadence in days
+                  - spinbutton "Cadence in days" [ref=e368]: "7"
+              - generic [ref=e369]:
+                - generic [ref=e370]:
+                  - generic [ref=e371]: Bond health
+                  - status "Bond health 88" [ref=e372]: 88%
+                - slider [ref=e374] [cursor=pointer]: "88"
+              - generic [ref=e375]:
+                - generic [ref=e376]: What is alive right now?
+                - textbox "What is alive right now?" [ref=e377]:
+                  - /placeholder: New project, life change, family context, trip, work shift...
+              - generic [ref=e378]:
+                - generic [ref=e379]: Groups
+                - generic [ref=e380]:
+                  - generic [ref=e382]: No groups yet
+                  - textbox "Groups No groups yet Add group Saved to this person" [ref=e383]:
+                    - /placeholder: Add a custom group, then press Enter or Add
+                  - generic [ref=e384]:
+                    - button "Add group" [ref=e385] [cursor=pointer]
+                    - generic [ref=e386]: Saved to this person
+              - generic [ref=e387]:
+                - generic [ref=e388]: Tags
+                - generic [ref=e389]:
+                  - generic [ref=e390]:
+                    - button "Tags business remove Add tag Saved to this person family long-distance founder creative travel social" [ref=e391] [cursor=pointer]:
+                      - generic [ref=e392]: local
+                      - generic [ref=e393]: remove
+                    - button "business remove" [ref=e394] [cursor=pointer]:
+                      - generic [ref=e395]: business
+                      - generic [ref=e396]: remove
+                  - textbox "Type a tag, then press Enter or Add" [ref=e397]
+                  - generic [ref=e398]:
+                    - button "Add tag" [ref=e399] [cursor=pointer]
+                    - generic [ref=e400]: Saved to this person
+                  - generic [ref=e401]:
+                    - button "family" [ref=e402] [cursor=pointer]
+                    - button "long-distance" [ref=e403] [cursor=pointer]
+                    - button "founder" [ref=e404] [cursor=pointer]
+                    - button "creative" [ref=e405] [cursor=pointer]
+                    - button "travel" [ref=e406] [cursor=pointer]
+                    - button "social" [ref=e407] [cursor=pointer]
+          - generic [ref=e408]:
+            - button "Contact card Reachability and social context Email, socials, company, birthday, and home address. 0 fields" [ref=e409] [cursor=pointer]:
+              - generic [ref=e410]:
+                - paragraph [ref=e411]: Contact card
+                - strong [ref=e412]: Reachability and social context
+                - generic [ref=e413]: Email, socials, company, birthday, and home address.
+              - generic [ref=e415]: 0 fields
+            - generic [ref=e417]:
+              - generic [ref=e418]:
+                - generic [ref=e419]:
+                  - strong [ref=e420]: Contact card
+                  - generic [ref=e421]: Email, socials, website, and home address
+                - emphasis [ref=e422]: Added Mon, Mar 30
+              - generic [ref=e423]:
+                - generic [ref=e424]:
+                  - text: Email
+                  - textbox "Email" [ref=e425]:
+                    - /placeholder: name@example.com
+                - generic [ref=e426]:
+                  - text: Phone
+                  - textbox "Phone" [ref=e427]:
+                    - /placeholder: +971 ...
+                - generic [ref=e428]:
+                  - text: WhatsApp
+                  - textbox "WhatsApp" [ref=e429]:
+                    - /placeholder: +971 ...
+                - generic [ref=e430]:
+                  - text: Telegram
+                  - textbox "Telegram" [ref=e431]:
+                    - /placeholder: "@handle"
+                - generic [ref=e432]:
+                  - text: LinkedIn
+                  - textbox "LinkedIn" [ref=e433]:
+                    - /placeholder: linkedin.com/in/...
+                - generic [ref=e434]:
+                  - text: Instagram
+                  - textbox "Instagram" [ref=e435]:
+                    - /placeholder: "@handle"
+                - generic [ref=e436]:
+                  - text: Snapchat
+                  - textbox "Snapchat" [ref=e437]:
+                    - /placeholder: "@handle"
+                - generic [ref=e438]:
+                  - text: TikTok
+                  - textbox "TikTok" [ref=e439]:
+                    - /placeholder: "@handle"
+                - generic [ref=e440]:
+                  - text: X
+                  - textbox "X" [ref=e441]:
+                    - /placeholder: "@handle"
+                - generic [ref=e442]:
+                  - text: Website
+                  - textbox "Website" [ref=e443]:
+                    - /placeholder: https://...
+                - generic [ref=e444]:
+                  - text: Company
+                  - textbox "Company" [ref=e445]:
+                    - /placeholder: Company or context
+                - generic [ref=e446]:
+                  - text: Birthday
+                  - textbox "Birthday" [ref=e447]:
+                    - /placeholder: ""
+                - generic [ref=e448]:
+                  - text: Home address
+                  - textbox "Home address" [ref=e449]:
+                    - /placeholder: Apartment, home, or mailing address
+          - generic [ref=e450]:
+            - button "Orbit Relationship network Jump between family, friends, collaborators, or shared circles. 0 linked" [ref=e451] [cursor=pointer]:
+              - generic [ref=e452]:
+                - paragraph [ref=e453]: Orbit
+                - strong [ref=e454]: Relationship network
+                - generic [ref=e455]: Jump between family, friends, collaborators, or shared circles.
+              - generic [ref=e457]: 0 linked
+            - generic [ref=e459]:
+              - generic [ref=e461]: No related people yet
+              - combobox "Type a person name and press Enter" [ref=e462]
+              - generic [ref=e463]:
+                - button "Link person" [ref=e464] [cursor=pointer]
+                - button "Open orbit" [ref=e465] [cursor=pointer]
+              - generic [ref=e466]:
+                - button "Gaspard" [ref=e467] [cursor=pointer]
+                - button "Karoline Berg" [ref=e468] [cursor=pointer]
+                - button "Rayan Shayara" [ref=e469] [cursor=pointer]
+                - button "Rayhan" [ref=e470] [cursor=pointer]
+          - generic [ref=e471]:
+            - button "Notes Keep narrative context Short factual notes that help future-you reconnect smoothly. Empty" [ref=e472] [cursor=pointer]:
+              - generic [ref=e473]:
+                - paragraph [ref=e474]: Notes
+                - strong [ref=e475]: Keep narrative context
+                - generic [ref=e476]: Short factual notes that help future-you reconnect smoothly.
+              - generic [ref=e478]: Empty
+            - generic [ref=e481]:
+              - generic [ref=e482]: Notes
+              - textbox "Notes" [ref=e483]:
+                - /placeholder: Short factual notes that help future you remember context
+          - generic [ref=e484]:
+            - button "Memory lane 0 memories saved A running trail of moments, changes, and reminders for next time. Empty" [ref=e485] [cursor=pointer]:
+              - generic [ref=e486]:
+                - paragraph [ref=e487]: Memory lane
+                - strong [ref=e488]: 0 memories saved
+                - generic [ref=e489]: A running trail of moments, changes, and reminders for next time.
+              - generic [ref=e491]: Empty
+            - generic [ref=e493]:
+              - generic [ref=e494]:
+                - generic [ref=e495]:
+                  - generic [ref=e496]:
+                    - generic [ref=e497]: Memory date
+                    - textbox "Memory date" [ref=e498]: 2026-04-14
+                  - generic [ref=e499]:
+                    - generic [ref=e500]: Shortcut
+                    - generic [ref=e501]: Cmd/Ctrl + Enter to save
+                - generic [ref=e502]:
+                  - generic [ref=e503]: Memory
+                  - textbox "Memory" [ref=e504]:
+                    - /placeholder: What happened, what matters, and what you should remember for next time
+                - generic [ref=e505]:
+                  - button "Save memory" [ref=e506] [cursor=pointer]
+                  - button "Clear draft" [ref=e507] [cursor=pointer]
+              - generic [ref=e508]:
+                - paragraph [ref=e509]: No memory yet
+                - heading "Start a memory trail." [level=3] [ref=e510]
+                - paragraph [ref=e511]: Save moments, updates, and personal details you want available next time.
+  - generic:
+    - dialog "Settings panel":
+      - generic:
+        - complementary:
+          - generic:
+            - generic:
+              - paragraph: Settings
+              - heading "Run the workspace." [level=2]
+              - paragraph: A cleaner control room for how Roster looks, behaves, reminds, and stores your data.
+            - button "Close settings": Close
+          - tablist "Settings sections":
+            - tab "General Workspace" [selected]:
+              - generic:
+                - strong: General
+                - generic: Workspace
+            - tab "Defaults Template":
+              - generic:
+                - strong: Defaults
+                - generic: Template
+            - tab "Extra features Structure":
+              - generic:
+                - strong: Extra features
+                - generic: Structure
+            - tab "Shortcuts Keyboard":
+              - generic:
+                - strong: Shortcuts
+                - generic: Keyboard
+            - tab "Data Safety":
+              - generic:
+                - strong: Data
+                - generic: Safety
+          - generic:
+            - generic: Mesh Night
+            - generic: Motion on
+            - generic: 67% scale
+            - generic: classic mode
+        - generic:
+          - generic:
+            - generic:
+              - paragraph: Workspace
+              - heading "Visuals, motion, and daily controls" [level=3]
+              - paragraph: Tune the app shell, motion behavior, scale, and reminders without hunting through separate modals.
+            - generic:
+              - generic: 6 active people
+              - generic: 5 touch styles
+              - generic: 4 tiers
+          - generic:
+            - generic:
+              - paragraph: Visual mode
+              - generic:
+                - strong: Theme
+                - generic: Choose a darker palette with clearer contrast and less visual noise.
+                - combobox:
+                  - option "Mesh Night" [selected]
+                  - option "Clay Ember"
+                  - option "Harbor Slate"
+            - generic:
+              - paragraph: Interaction
+              - generic:
+                - generic:
+                  - strong: Compact roster mode
+                  - generic: Show a denser list with just name, due state, next touch, and reconnect timing.
+                - generic:
+                  - checkbox
+              - generic:
+                - generic:
+                  - strong: Ultra compact mode
+                  - generic: Switch the classic workspace into a traditional Mesh-style CRM layout with flatter rows, denser scanning, and calmer chrome.
+                - generic:
+                  - checkbox
+              - generic:
+                - generic:
+                  - strong: Workspace mode
+                  - generic: Switch between classic CRM, tab cards, a city map, a relationship atlas, or a timeline of activity.
+                - combobox:
+                  - option "Classic CRM" [selected]
+                  - option "Tab view"
+                  - option "Map view"
+                  - option "Relationships"
+                  - option "Timeline"
+              - generic:
+                - generic:
+                  - strong: Motion
+                  - generic: Keep the floating glows and layout transitions.
+                - generic:
+                  - checkbox [checked]
+              - generic:
+                - generic:
+                  - strong: Command palette
+                  - generic: Open quick actions with Cmd/Ctrl + K and jump to any major workflow.
+                - generic: Cmd/Ctrl + K
+              - generic:
+                - generic:
+                  - strong: Compact density
+                  - generic: Tighten the chrome while keeping the content readable.
+                - generic:
+                  - checkbox
+              - generic:
+                - generic:
+                  - strong: Shortcut dock
+                  - generic: Show the power-user key strip beside the settings button.
+                - generic:
+                  - checkbox [checked]
+            - generic:
+              - paragraph: Scale
+              - generic:
+                - strong: Workspace scale
+                - generic: Default is 67% because the full layout breathes better at that size.
+              - generic:
+                - strong: 67%
+                - slider "67%": "67"
+            - generic:
+              - paragraph: Touch styles
+              - generic:
+                - strong: Customize how you reconnect
+                - generic: Add your own contact styles so the inspector, defaults, and queue reflect how you actually keep in touch.
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Text
+                    - generic: core
+                  - generic:
+                    - generic: Call
+                    - generic: core
+                  - generic:
+                    - generic: Coffee
+                    - generic: core
+                  - generic:
+                    - generic: Dinner
+                    - generic: core
+                  - generic:
+                    - generic: Voice note
+                    - generic: core
+                - textbox "Lunch, walk, voice memo, WhatsApp..."
+                - generic:
+                  - button "Add touch style"
+                  - generic: 5 available
+            - generic:
+              - paragraph: Native reminders
+              - generic:
+                - strong: Desktop reminder digest
+                - generic: Roster can send a local reminder summary with birthdays, due touches, and pre-meeting nudges while the app is open.
+              - generic:
+                - generic:
+                  - strong: Enable reminders
+                  - generic: Allow notifications so the digest can reach you.
+                - generic:
+                  - checkbox
+              - generic:
+                - generic:
+                  - generic: Digest range
+                  - combobox "Digest range":
+                    - option "Today only"
+                    - option "Today + this week" [selected]
+                - generic:
+                  - generic: Reminder hour
+                  - spinbutton "Reminder hour": "9"
+                - generic:
+                  - generic: Birthday lead days
+                  - spinbutton "Birthday lead days": "7"
+                - generic:
+                  - generic: Meeting prep lead days
+                  - spinbutton "Meeting prep lead days": "1"
+              - generic:
+                - button "Enable notifications"
+                - button "Preview digest"
+  - dialog "Roster onboarding" [ref=e513]:
+    - paragraph [ref=e514]: Welcome
+    - heading "Roster helps you remember people without becoming weirdly robotic about it." [level=2] [ref=e515]
+    - paragraph [ref=e516]: "Think of it as a calm relationship cockpit: context, memories, cadence, and follow-up timing, all in one place."
+    - generic [ref=e527]:
+      - button "I'm an expert already" [ref=e528] [cursor=pointer]
+      - button "Next" [ref=e529] [cursor=pointer]
+  - generic [ref=e531]:
+    - img "Roster logo" [ref=e532]
+    - generic [ref=e533]:
+      - paragraph [ref=e534]: Roster
+      - strong [ref=e535]: Warming the orbit.
+      - generic [ref=e536]: Give it one very dramatic heartbeat.
