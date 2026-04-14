@@ -838,8 +838,8 @@ body.ultra-compact-view .record-card.selected {
   transform: translateX(2px);
 }
 
-body.ultra-compact-view .record-card__meta-line,
-body.ultra-compact-view .compact-inline--ultra {
+body.collection-animations-on.ultra-compact-view .record-card__meta-line,
+body.collection-animations-on.ultra-compact-view .compact-inline--ultra {
   animation: crm-row-reveal 260ms var(--ease-smooth);
 }
 
@@ -4312,6 +4312,10 @@ body.dense-ui .memory-composer {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
   gap: 12px;
+  opacity: 1;
+}
+
+body.collection-animations-on .timeline-entry {
   opacity: 0;
   animation: list-item-fade 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -5211,33 +5215,46 @@ body.dense-ui .memory-composer {
 }
 
 .record-list--animated > li {
+  opacity: 1;
+}
+
+.record-list--animated > li .record-card {
+  transform: none;
+}
+
+body.collection-animations-on .record-list--animated > li {
   opacity: 0;
   animation: list-item-fade 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.record-list--animated > li .record-card {
+body.collection-animations-on .record-list--animated > li .record-card {
   transform: translateY(14px);
   animation: list-item-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.record-list--animated > li:nth-child(1),
-.record-list--animated > li:nth-child(1) .record-card { animation-delay: 30ms; }
-.record-list--animated > li:nth-child(2),
-.record-list--animated > li:nth-child(2) .record-card { animation-delay: 60ms; }
-.record-list--animated > li:nth-child(3),
-.record-list--animated > li:nth-child(3) .record-card { animation-delay: 90ms; }
-.record-list--animated > li:nth-child(4),
-.record-list--animated > li:nth-child(4) .record-card { animation-delay: 120ms; }
-.record-list--animated > li:nth-child(5),
-.record-list--animated > li:nth-child(5) .record-card { animation-delay: 150ms; }
-.record-list--animated > li:nth-child(6),
-.record-list--animated > li:nth-child(6) .record-card { animation-delay: 180ms; }
-.record-list--animated > li:nth-child(7),
-.record-list--animated > li:nth-child(7) .record-card { animation-delay: 210ms; }
-.record-list--animated > li:nth-child(8),
-.record-list--animated > li:nth-child(8) .record-card { animation-delay: 240ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(1),
+body.collection-animations-on .record-list--animated > li:nth-child(1) .record-card { animation-delay: 30ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(2),
+body.collection-animations-on .record-list--animated > li:nth-child(2) .record-card { animation-delay: 60ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(3),
+body.collection-animations-on .record-list--animated > li:nth-child(3) .record-card { animation-delay: 90ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(4),
+body.collection-animations-on .record-list--animated > li:nth-child(4) .record-card { animation-delay: 120ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(5),
+body.collection-animations-on .record-list--animated > li:nth-child(5) .record-card { animation-delay: 150ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(6),
+body.collection-animations-on .record-list--animated > li:nth-child(6) .record-card { animation-delay: 180ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(7),
+body.collection-animations-on .record-list--animated > li:nth-child(7) .record-card { animation-delay: 210ms; }
+body.collection-animations-on .record-list--animated > li:nth-child(8),
+body.collection-animations-on .record-list--animated > li:nth-child(8) .record-card { animation-delay: 240ms; }
 
 .tab-card-grid > .tab-contact-card {
+  opacity: 1;
+  transform: none;
+}
+
+body.collection-animations-on .tab-card-grid > .tab-contact-card {
   opacity: 0;
   transform: translateY(14px);
   animation:
@@ -5245,12 +5262,12 @@ body.dense-ui .memory-composer {
     list-item-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.tab-card-grid > .tab-contact-card:nth-child(1) { animation-delay: 30ms, 30ms; }
-.tab-card-grid > .tab-contact-card:nth-child(2) { animation-delay: 60ms, 60ms; }
-.tab-card-grid > .tab-contact-card:nth-child(3) { animation-delay: 90ms, 90ms; }
-.tab-card-grid > .tab-contact-card:nth-child(4) { animation-delay: 120ms, 120ms; }
-.tab-card-grid > .tab-contact-card:nth-child(5) { animation-delay: 150ms, 150ms; }
-.tab-card-grid > .tab-contact-card:nth-child(6) { animation-delay: 180ms, 180ms; }
+body.collection-animations-on .tab-card-grid > .tab-contact-card:nth-child(1) { animation-delay: 30ms, 30ms; }
+body.collection-animations-on .tab-card-grid > .tab-contact-card:nth-child(2) { animation-delay: 60ms, 60ms; }
+body.collection-animations-on .tab-card-grid > .tab-contact-card:nth-child(3) { animation-delay: 90ms, 90ms; }
+body.collection-animations-on .tab-card-grid > .tab-contact-card:nth-child(4) { animation-delay: 120ms, 120ms; }
+body.collection-animations-on .tab-card-grid > .tab-contact-card:nth-child(5) { animation-delay: 150ms, 150ms; }
+body.collection-animations-on .tab-card-grid > .tab-contact-card:nth-child(6) { animation-delay: 180ms, 180ms; }
 
 .record-select-toggle {
   display: grid;

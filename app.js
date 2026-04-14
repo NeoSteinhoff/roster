@@ -98,6 +98,7 @@ const hotkeyLegend = [
   { keys: 'Q', action: 'Toggle quick capture' },
   { keys: 'U', action: 'Toggle orbit' },
   { keys: 'C', action: 'Toggle compact mode' },
+  { keys: 'V', action: 'Toggle CRM mode' },
   { keys: 'E', action: 'Focus memory' },
   { keys: 'T', action: 'Focus tags' },
   { keys: 'F', action: 'Focus active context' },
@@ -461,6 +462,7 @@ const state = {
     removeGroup: '',
   },
   mapLocationPanels: {},
+  collectionAnimations: true,
 }
 
 syncTierConfig(state.settings)
@@ -588,6 +590,10 @@ function syncTierConfig(settings = defaultSettings) {
       description: tier.description,
     }
   }
+}
+
+function requestCollectionAnimations() {
+  state.collectionAnimations = true
 }
 
 function render({ preserveFocus = true } = {}) {
@@ -903,6 +909,8 @@ function render({ preserveFocus = true } = {}) {
     <input id="activity-import-input" type="file" accept=".csv,.ics,.txt,text/csv,text/calendar,text/plain" hidden />
     <input id="avatar-input" type="file" accept="image/*" hidden />
   `
+
+  state.collectionAnimations = false
 
   if (focusSnapshot) {
     restoreFocus(focusSnapshot)
@@ -3845,7 +3853,8 @@ function buildHeroSection({
   thisWeekQueue,
   ultraCompactActive,
 }) {
-  const compactToggleLabel = state.settings.compact ? 'Full view' : 'Compact view'
+  const compactToggleLabel = state.settings.compact ? 'Standard density' : 'Dense list'
+  const crmToggleLabel = ultraCompactActive ? 'Standard shell' : 'CRM mode'
   const summaryMarkup = ultraCompactActive
     ? `
       ${summaryTile('Open relationships', activeRecords.length, 'Entire active roster in one dense CRM view')}
@@ -3864,7 +3873,7 @@ function buildHeroSection({
     <header class="hero ${ultraCompactActive ? 'hero--ultra' : ''}">
       <div class="hero-copy ${ultraCompactActive ? 'hero-copy--ultra' : ''}">
         <div class="brand-lockup">
-          <img class="brand-logo" src="./assets/roster-logo.svg?v=20260414a" alt="Roster logo" />
+          <img class="brand-logo" src="./assets/roster-logo.svg?v=20260414b" alt="Roster logo" />
           <div class="brand-lockup__text">
             <p class="eyebrow">Roster</p>
             <small>The friend CRM</small>
@@ -3905,6 +3914,9 @@ function buildHeroSection({
                 `
                 : ''
             }
+            <button class="button button-secondary ${ultraCompactActive ? 'button-active' : ''}" data-action="toggle-ultra-compact" ${keyHintAttrs('V')}>
+              ${crmToggleLabel}
+            </button>
             ${
               featureFlags.tabViewToggle
                 ? `
@@ -4445,9 +4457,13 @@ function commitUiMutation(mutator, options = {}) {
     preserveFocus = false,
     pulseClass = '',
     pulseDuration = 420,
+    animateCollections = false,
   } = options
 
   const applyMutation = () => {
+    if (animateCollections) {
+      requestCollectionAnimations()
+    }
     mutator()
     render({ preserveFocus })
   }
@@ -4509,7 +4525,7 @@ function toggleCompactMode() {
     state.settings.compact = !state.settings.compact
     persistSettings()
     animateCompactToggle()
-  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 520 })
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 520, animateCollections: true })
 }
 
 function toggleUltraCompactMode() {
@@ -4521,7 +4537,7 @@ function toggleUltraCompactMode() {
     }
     persistSettings()
     animateCompactToggle()
-  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 560 })
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 560, animateCollections: true })
 }
 
 function setWorkspaceMode(mode) {
@@ -4530,14 +4546,14 @@ function setWorkspaceMode(mode) {
     state.settings.tabView = state.settings.workspaceMode === 'tab'
     persistSettings()
     animateCompactToggle()
-  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 520 })
+  }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 520, animateCollections: true })
 }
 
 function setTabLayout(layout) {
   commitUiMutation(() => {
     state.settings.tabLayout = ['cards', 'kanban'].includes(layout) ? layout : 'cards'
     persistSettings()
-  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420 })
+  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420, animateCollections: true })
 }
 
 function setMapLayer(layer) {
@@ -5387,6 +5403,7 @@ function handleInput(event) {
     } else if (uiFilter === 'direction') {
       state.sortDirection = target.value || 'desc'
     }
+    requestCollectionAnimations()
     render({ preserveFocus: false })
     return
   }
@@ -5779,6 +5796,10 @@ function handleKeydown(event) {
       event.preventDefault()
       toggleCompactMode()
       break
+    case 'v':
+      event.preventDefault()
+      toggleUltraCompactMode()
+      break
     case 't':
       event.preventDefault()
       focusAfterRender('record-tags')
@@ -5873,7 +5894,7 @@ function setFilter(filter) {
       state.selectedId = visible[0].id
       restoreDraftsForSelected(state.selectedId)
     }
-  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420 })
+  }, { pulseClass: 'ui-filter-pulse', pulseDuration: 420, animateCollections: true })
 }
 
 function togglePanel(token) {
@@ -7470,6 +7491,7 @@ function applySettings() {
   document.body.dataset.theme = state.settings.theme
   document.body.dataset.workspaceMode = workspaceMode
   document.body.classList.toggle('motion-off', !state.settings.motion)
+  document.body.classList.toggle('collection-animations-on', !!state.collectionAnimations)
   document.body.classList.toggle('dense-ui', !!state.settings.dense)
   document.body.classList.toggle('compact-view', !!state.settings.compact)
   document.body.classList.toggle('ultra-compact-view', workspaceMode === 'classic' && !!state.settings.ultraCompact)
