@@ -98,7 +98,7 @@ const hotkeyLegend = [
   { keys: 'Q', action: 'Toggle quick capture' },
   { keys: 'U', action: 'Toggle orbit' },
   { keys: 'C', action: 'Toggle compact mode' },
-  { keys: 'V', action: 'Toggle CRM mode' },
+  { keys: 'V', action: 'Toggle ultra compact mode' },
   { keys: 'E', action: 'Focus memory' },
   { keys: 'T', action: 'Focus tags' },
   { keys: 'F', action: 'Focus active context' },
@@ -3854,13 +3854,13 @@ function buildHeroSection({
   ultraCompactActive,
 }) {
   const compactToggleLabel = state.settings.compact ? 'Standard density' : 'Dense list'
-  const crmToggleLabel = ultraCompactActive ? 'Standard shell' : 'CRM mode'
+  const ultraCompactToggleLabel = ultraCompactActive ? 'Standard shell' : 'Ultra compact'
   const summaryMarkup = ultraCompactActive
     ? `
-      ${summaryTile('Open relationships', activeRecords.length, 'Entire active roster in one dense CRM view')}
-      ${summaryTile('Priority queue', topQueue.length, `${todayQueue.length} due today · ${thisWeekQueue.length} due this week`)}
-      ${summaryTile('Needs attention', needsAttentionCount, `${overdueCount} overdue now`)}
-      ${summaryTile('Stored memory', memoryCount, `${averageHealth}% average bond health`)}
+      ${summaryTile('People in view', activeRecords.length, 'A tighter operator view of the active roster')}
+      ${summaryTile('Review today', todayQueue.length, `${overdueCount} overdue · ${topQueue.length} top priority`)}
+      ${summaryTile('Due this week', thisWeekQueue.length, 'Upcoming birthdays, reconnects, and reminders')}
+      ${summaryTile('Memory graph', memoryCount, `${averageHealth}% average bond health`)}
     `
     : `
       ${summaryTile('People tracked', activeRecords.length, 'Only your active roster lives here')}
@@ -3881,11 +3881,11 @@ function buildHeroSection({
         </div>
         <div class="${ultraCompactActive ? 'hero-compact-bar' : ''}">
           <div class="${ultraCompactActive ? 'hero-compact-heading' : ''}">
-            <h1>${ultraCompactActive ? 'Operate the roster.' : 'Your people, clearly remembered.'}</h1>
+            <h1>${ultraCompactActive ? 'Your network, operational.' : 'Your people, clearly remembered.'}</h1>
             <p class="hero-summary">
               ${
                 ultraCompactActive
-                  ? 'Ultra compact mode turns the shell into a calmer, denser operating view with faster scanning, flatter rows, and less decorative chrome.'
+                  ? 'Ultra compact mode turns Roster into a quieter relationship workspace: lower chrome, denser rows, faster scanning, and clearer follow-up context.'
                   : 'Track the relationships that matter, keep memory attached to each person, and move through your roster with less friction.'
               }
             </p>
@@ -3893,9 +3893,9 @@ function buildHeroSection({
               ultraCompactActive
                 ? `
                   <div class="hero-compact-badges">
-                    <span class="command-chip"><b>CRM</b><small>Traditional list + inspector</small></span>
+                    <span class="command-chip"><b>Review</b><small>${todayQueue.length} due today · ${overdueCount} overdue</small></span>
                     <span class="command-chip"><b>Focus</b><small>${escapeHtml(selectedRecord?.name || 'No person selected')}</small></span>
-                    <span class="command-chip"><b>Queue</b><small>${topQueue.length} people need review</small></span>
+                    <span class="command-chip"><b>Inspector</b><small>${state.settings.rightRailVisible !== false ? 'Live profile open' : 'Profile rail hidden'}</small></span>
                   </div>
                 `
                 : ''
@@ -3915,7 +3915,7 @@ function buildHeroSection({
                 : ''
             }
             <button class="button button-secondary ${ultraCompactActive ? 'button-active' : ''}" data-action="toggle-ultra-compact" ${keyHintAttrs('V')}>
-              ${crmToggleLabel}
+              ${ultraCompactToggleLabel}
             </button>
             ${
               featureFlags.tabViewToggle
@@ -4099,6 +4099,19 @@ function buildClassicRosterPanel({
           ? `
             <div class="record-list-shell ${ultraCompactActive ? 'record-list-shell--ultra' : ''}" data-selection-shell>
               <div class="selection-rail" data-selection-rail></div>
+              ${
+                ultraCompactActive
+                  ? `
+                    <div class="mesh-list-head" aria-hidden="true">
+                      <span>Person</span>
+                      <span>Rhythm</span>
+                      <span>Last touch</span>
+                      <span>Next</span>
+                      <span>Context</span>
+                    </div>
+                  `
+                  : ''
+              }
               <ul class="${listClassName}">
                 ${visibleRecords.map((record) => buildClassicRecordCard(record, { today, activeSelectedId, ultraCompactActive })).join('')}
               </ul>
@@ -4127,58 +4140,111 @@ function buildClassicRecordCard(record, { today, activeSelectedId, ultraCompactA
     .filter(Boolean)
     .join(' ')
   const inlineTags = [...record.groups.slice(0, 1), ...record.tags.slice(0, 2)]
+  const contextSummary = truncate(record.focus || latestMemory?.text || record.notes || 'No context saved yet.', 116)
+  const companyOrContext = record.contact?.company || ''
+  const identityMeta = [record.city || 'No city', companyOrContext || record.touchStyle].filter(Boolean).join(' · ')
+  const ultraTokens = [companyOrContext || record.city || record.touchStyle, ...inlineTags].filter(Boolean).slice(0, 4)
 
   return `
     <li>
       <button class="${recordClassName}" data-select="${record.id}">
-        <div class="record-top">
-          <div class="record-person">
-            ${
-              state.multiSelectMode
-                ? `
-                  <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
-                    <span></span>
-                  </span>
-                `
-                : ''
-            }
-            ${buildRecordAvatar(record, 'small')}
-            <div>
-              <p class="record-tier">${tierMeta[record.tier].label}</p>
-              <h3>${escapeHtml(record.name)}</h3>
-            </div>
-          </div>
-          <i class="status-pill tone-${attention.tone}">${attention.label}</i>
-        </div>
-
         ${
           ultraCompactActive
             ? `
-              <div class="record-card__meta-line">
-                <span class="record-meta-pill">${escapeHtml(record.city || 'No city')}</span>
-                <span class="record-meta-pill">${escapeHtml(record.touchStyle)}</span>
-                ${
-                  inlineTags.length
-                    ? inlineTags.map((item) => `<span class="record-meta-pill">${escapeHtml(item)}</span>`).join('')
-                    : '<span class="record-meta-pill">No tags yet</span>'
-                }
-              </div>
-              <div class="compact-inline compact-inline--ultra">
-                <strong>Next ${formatShortDate(nextTouch)}</strong>
-                <span>Last ${formatShortDate(record.lastContact)}</span>
-                <span>${formatReconnectTiming(attention.daysUntil)}</span>
-                <span>${record.memories.length} memories</span>
-                <span>${escapeHtml(truncate(record.focus || 'No focus note yet.', 58))}</span>
+              <div class="mesh-row">
+                <div class="mesh-row__identity">
+                  <div class="record-person">
+                    ${
+                      state.multiSelectMode
+                        ? `
+                          <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                            <span></span>
+                          </span>
+                        `
+                        : ''
+                    }
+                    ${buildRecordAvatar(record, 'small')}
+                    <div class="mesh-row__identity-copy">
+                      <p class="record-tier">${tierMeta[record.tier].label}</p>
+                      <h3>${escapeHtml(record.name)}</h3>
+                      <p class="mesh-row__identity-meta">${escapeHtml(identityMeta)}</p>
+                    </div>
+                  </div>
+                  <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                </div>
+                <div class="mesh-row__metric">
+                  <span class="mesh-row__label">Rhythm</span>
+                  <strong>${escapeHtml(record.touchStyle)}</strong>
+                  <small>${record.cadenceDays} day cadence</small>
+                </div>
+                <div class="mesh-row__metric">
+                  <span class="mesh-row__label">Last touch</span>
+                  <strong>${formatShortDate(record.lastContact)}</strong>
+                  <small>${record.memories.length} memories stored</small>
+                </div>
+                <div class="mesh-row__metric">
+                  <span class="mesh-row__label">Next touch</span>
+                  <strong>${formatShortDate(nextTouch)}</strong>
+                  <small>${formatReconnectTiming(attention.daysUntil)}</small>
+                </div>
+                <div class="mesh-row__context">
+                  <p class="mesh-row__context-copy">${escapeHtml(contextSummary)}</p>
+                  <div class="mesh-row__tokens">
+                    ${
+                      ultraTokens.length
+                        ? ultraTokens.map((item) => `<span class="record-meta-pill">${escapeHtml(item)}</span>`).join('')
+                        : '<span class="record-meta-pill">No tags yet</span>'
+                    }
+                  </div>
+                </div>
               </div>
             `
             : compactListActive
               ? `
+                <div class="record-top">
+                  <div class="record-person">
+                    ${
+                      state.multiSelectMode
+                        ? `
+                          <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                            <span></span>
+                          </span>
+                        `
+                        : ''
+                    }
+                    ${buildRecordAvatar(record, 'small')}
+                    <div>
+                      <p class="record-tier">${tierMeta[record.tier].label}</p>
+                      <h3>${escapeHtml(record.name)}</h3>
+                    </div>
+                  </div>
+                  <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                </div>
                 <div class="compact-inline compact-inline--minimal">
                   <strong>${formatShortDate(nextTouch)}</strong>
                   <span>${formatReconnectTiming(attention.daysUntil)}</span>
                 </div>
               `
               : `
+                <div class="record-top">
+                  <div class="record-person">
+                    ${
+                      state.multiSelectMode
+                        ? `
+                          <span class="record-select-toggle ${isBulkSelected ? 'active' : ''}" data-toggle-select="${record.id}" aria-label="${isBulkSelected ? 'Deselect person' : 'Select person'}" role="button">
+                            <span></span>
+                          </span>
+                        `
+                        : ''
+                    }
+                    ${buildRecordAvatar(record, 'small')}
+                    <div>
+                      <p class="record-tier">${tierMeta[record.tier].label}</p>
+                      <h3>${escapeHtml(record.name)}</h3>
+                    </div>
+                  </div>
+                  <i class="status-pill tone-${attention.tone}">${attention.label}</i>
+                </div>
                 <p class="record-focus">${escapeHtml(record.focus || 'No focus note added yet.')}</p>
 
                 <div class="record-meta">
@@ -4949,6 +5015,9 @@ function handleClick(event) {
         return
       case 'toggle-compact':
         toggleCompactMode()
+        return
+      case 'toggle-ultra-compact':
+        toggleUltraCompactMode()
         return
       case 'set-workspace-mode':
         setWorkspaceMode(action.dataset.workspaceMode)
