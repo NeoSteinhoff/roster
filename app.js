@@ -676,7 +676,7 @@ function render({ preserveFocus = true } = {}) {
   })
 
   app.innerHTML = `
-    <div class="app-frame ${state.multiSelectMode ? 'app-frame--multi-select' : ''} ${state.booting ? 'app-frame--booting' : ''} ${ultraCompactActive ? 'app-frame--ultra-compact' : ''}" style="--frame-scale:${state.settings.scale / 100}">
+    <div class="app-frame ${state.multiSelectMode ? 'app-frame--multi-select' : ''} ${state.booting ? 'app-frame--booting' : ''} ${ultraCompactActive ? 'app-frame--ultra-compact' : ''}">
     <div class="crm-shell">
       ${heroMarkup}
 
@@ -2952,6 +2952,14 @@ function buildOrbitSidebarMarkup(orbit, today) {
 function buildMobileQuickBar(selectedRecord) {
   return `
     <div class="mobile-quickbar">
+      <button class="mobile-quickbar__button mobile-quickbar__button--nav" type="button" data-action="reveal-left-rail">
+        <strong>Views</strong>
+        <small>Open filters</small>
+      </button>
+      <button class="mobile-quickbar__button mobile-quickbar__button--nav" type="button" data-action="reveal-inspector">
+        <strong>Inspector</strong>
+        <small>${escapeHtml(selectedRecord?.name || 'Selected person')}</small>
+      </button>
       <button class="mobile-quickbar__button" type="button" data-action="open-quick-capture" data-quick-capture-mode="memory">
         <strong>Memory</strong>
         <small>${escapeHtml(selectedRecord?.name || 'Pick a person')}</small>
@@ -3931,17 +3939,17 @@ function buildHeroSection({
                 : ''
             }
             <div class="shell-controls">
-              <span class="command-chip">
+              <button class="command-chip command-chip--button shell-control" type="button" data-action="reveal-left-rail">
                 <b>[</b>
-                <small>Left rail</small>
-              </span>
+                <small>${state.settings.leftRailVisible !== false ? 'Views rail' : 'Show views'}</small>
+              </button>
               ${
                 workspaceMode === 'classic'
                   ? `
-                    <span class="command-chip">
+                    <button class="command-chip command-chip--button shell-control" type="button" data-action="reveal-inspector">
                       <b>]</b>
-                      <small>Inspector</small>
-                    </span>
+                      <small>${state.settings.rightRailVisible !== false ? 'Inspector' : 'Show inspector'}</small>
+                    </button>
                   `
                   : ''
               }
@@ -4496,6 +4504,40 @@ function focusAfterRender(focusKey) {
   })
 }
 
+function scrollSelectorIntoView(selector) {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const element = document.querySelector(selector)
+      if (element instanceof HTMLElement) {
+        element.scrollIntoView({
+          block: 'start',
+          behavior: state.settings.motion ? 'smooth' : 'auto',
+        })
+      }
+    })
+  })
+}
+
+function revealLeftRail() {
+  if (state.settings.leftRailVisible === false) {
+    commitUiMutation(() => {
+      state.settings.leftRailVisible = true
+      persistSettings()
+    }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 420 })
+  }
+  scrollSelectorIntoView('[data-onboarding-target="left-rail"]')
+}
+
+function revealInspectorPanel() {
+  if (state.settings.rightRailVisible === false) {
+    commitUiMutation(() => {
+      state.settings.rightRailVisible = true
+      persistSettings()
+    }, { pulseClass: 'ui-panorama-pulse', pulseDuration: 420 })
+  }
+  scrollSelectorIntoView('.panel.inspector')
+}
+
 function pulseBodyClass(className, duration = 420) {
   if (!className || document.body.classList.contains('motion-off')) {
     return
@@ -5045,6 +5087,12 @@ function handleClick(event) {
         return
       case 'toggle-right-rail':
         toggleRightRail()
+        return
+      case 'reveal-left-rail':
+        revealLeftRail()
+        return
+      case 'reveal-inspector':
+        revealInspectorPanel()
         return
       case 'open-shortcuts-tab':
         openSettingsTab('shortcuts')
@@ -7557,6 +7605,7 @@ function getNextTouchDate(record) {
 
 function applySettings() {
   const workspaceMode = getWorkspaceMode()
+  const scaleRatio = state.settings.scale / 100
   document.body.dataset.theme = state.settings.theme
   document.body.dataset.workspaceMode = workspaceMode
   document.body.classList.toggle('motion-off', !state.settings.motion)
@@ -7565,7 +7614,9 @@ function applySettings() {
   document.body.classList.toggle('compact-view', !!state.settings.compact)
   document.body.classList.toggle('ultra-compact-view', workspaceMode === 'classic' && !!state.settings.ultraCompact)
   document.body.classList.toggle('tab-view', workspaceMode === 'tab')
-  document.documentElement.style.setProperty('--frame-scale', String(state.settings.scale / 100))
+  document.documentElement.style.setProperty('--frame-scale', String(scaleRatio))
+  document.documentElement.style.setProperty('--shell-max-width', `${Math.round(1520 * scaleRatio)}px`)
+  document.documentElement.style.setProperty('--shell-max-width-ultra', `${Math.round(1700 * scaleRatio)}px`)
 }
 
 function loadReminderLog() {

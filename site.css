@@ -1116,3 +1116,60 @@ code {
     min-width: 760px;
   }
 }
+
+@media (max-width: 700px) {
+  .site-shell {
+    width: min(100%, calc(100% - 14px));
+    margin-top: 14px;
+  }
+
+  .site-nav {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .site-nav__links {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .site-nav__links a {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+
+  .hero-stage {
+    min-height: 460px;
+  }
+
+  .site-window {
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-nav,
+  .hero--immersive,
+  .feature-story,
+  .mode-showcase,
+  .workflow-band,
+  .pricing-teaser,
+  .faq-strip,
+  .final-cta,
+  .pricing-hero--immersive,
+  .plan-matrix,
+  .pricing-footnote {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .site-nav__links a {
+    flex-basis: 100%;
+  }
+
+  .hero-stage {
+    min-height: 380px;
+  }
+}
